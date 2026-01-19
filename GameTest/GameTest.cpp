@@ -12,7 +12,11 @@
 //------------------------------------------------------------------------
 // Eample data....
 //------------------------------------------------------------------------
-CSimpleSprite *testSprite;
+CSimpleSprite *player;
+// metro bg
+CSimpleSprite* background;
+CSimpleSprite* npc;        // NPC
+bool canRob = true;  // can npc be pickpocketed
 enum
 {
 	ANIM_FORWARDS,
@@ -27,16 +31,27 @@ enum
 //------------------------------------------------------------------------
 void Init()
 {
+	// background
+	background = App::CreateSprite(".\\TestData\\test_metro.jpg", 1, 1);
+	background->SetPosition(600.0f, 400.0f);
+	background->SetScale(0.6f);
 	//------------------------------------------------------------------------
+	// npc
+	npc = App::CreateSprite(".\\TestData\\test_npc.png", 4, 1); // 4 frame sprite, 1 row
+	npc->SetPosition(450.0f, 400.0f);
+	npc->SetScale(2.0f);
+	npc->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
+	npc->SetAnimation(0);
+	// 
 	// Example Sprite Code....
-	testSprite = App::CreateSprite(".\\TestData\\Test.bmp", 8, 4);
-	testSprite->SetPosition(400.0f, 400.0f);
+	player = App::CreateSprite(".\\TestData\\Test.bmp", 8, 4);
+	player->SetPosition(400.0f, 400.0f);
 	float speed = 1.0f / 15.0f;
-	testSprite->CreateAnimation(ANIM_BACKWARDS, speed, { 0,1,2,3,4,5,6,7 });
-	testSprite->CreateAnimation(ANIM_LEFT, speed, { 8,9,10,11,12,13,14,15 });
-	testSprite->CreateAnimation(ANIM_RIGHT, speed, { 16,17,18,19,20,21,22,23 });
-	testSprite->CreateAnimation(ANIM_FORWARDS, speed, { 24,25,26,27,28,29,30,31 });
-	testSprite->SetScale(1.0f);
+	player->CreateAnimation(ANIM_BACKWARDS, speed, { 0,1,2,3,4,5,6,7 });
+	player->CreateAnimation(ANIM_LEFT, speed, { 8,9,10,11,12,13,14,15 });
+	player->CreateAnimation(ANIM_RIGHT, speed, { 16,17,18,19,20,21,22,23 });
+	player->CreateAnimation(ANIM_FORWARDS, speed, { 24,25,26,27,28,29,30,31 });
+	player->SetScale(1.0f);
 	//------------------------------------------------------------------------
 }
 
@@ -48,58 +63,60 @@ void Update(float deltaTime)
 {
 	//------------------------------------------------------------------------
 	// Example Sprite Code....
-	testSprite->Update(deltaTime);
+	// update npc
+	npc->Update(deltaTime);
+	player->Update(deltaTime);
 	if (App::GetController().GetLeftThumbStickX() > 0.5f)
 	{
-		testSprite->SetAnimation(ANIM_RIGHT);
+		player->SetAnimation(ANIM_RIGHT);
 		float x, y;
-		testSprite->GetPosition(x, y);
+		player->GetPosition(x, y);
 		x += 1.0f;
-		testSprite->SetPosition(x, y);
+		player->SetPosition(x, y);
 	}
 	if (App::GetController().GetLeftThumbStickX() < -0.5f)
 	{
-		testSprite->SetAnimation(ANIM_LEFT);
+		player->SetAnimation(ANIM_LEFT);
 		float x, y;
-		testSprite->GetPosition(x, y);
+		player->GetPosition(x, y);
 		x -= 1.0f;
-		testSprite->SetPosition(x, y);
+		player->SetPosition(x, y);
 	}
     if (App::GetController().GetLeftThumbStickY() > 0.5f)
     {
-        testSprite->SetAnimation(ANIM_FORWARDS);
+		player->SetAnimation(ANIM_FORWARDS);
         float x, y;
-        testSprite->GetPosition(x, y);
+		player->GetPosition(x, y);
         y += 1.0f;
-        testSprite->SetPosition(x, y);
+		player->SetPosition(x, y);
     }
 	if (App::GetController().GetLeftThumbStickY() < -0.5f)
 	{
-		testSprite->SetAnimation(ANIM_BACKWARDS);
+		player->SetAnimation(ANIM_BACKWARDS);
 		float x, y;
-		testSprite->GetPosition(x, y);
+		player->GetPosition(x, y);
 		y -= 1.0f;
-		testSprite->SetPosition(x, y);
+		player->SetPosition(x, y);
 	}
 	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_UP, false))
 	{
-		testSprite->SetScale(testSprite->GetScale() + 0.1f);
+		player->SetScale(player->GetScale() + 0.1f);
 	}
 	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_DOWN, false))
 	{
-		testSprite->SetScale(testSprite->GetScale() - 0.1f);
+		player->SetScale(player->GetScale() - 0.1f);
 	}
 	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_LEFT, false))
 	{
-		testSprite->SetAngle(testSprite->GetAngle() + 0.1f);
+		player->SetAngle(player->GetAngle() + 0.1f);
 	}
 	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_RIGHT, false))
 	{
-		testSprite->SetAngle(testSprite->GetAngle() - 0.1f);
+		player->SetAngle(player->GetAngle() - 0.1f);
 	}
 	if (App::GetController().CheckButton(XINPUT_GAMEPAD_A, true))
 	{
-		testSprite->SetAnimation(-1);
+		player->SetAnimation(-1);
 	}
 	//------------------------------------------------------------------------
 	// Sample Sound.
@@ -116,15 +133,18 @@ void Update(float deltaTime)
 //------------------------------------------------------------------------
 void Render()
 {	
+	// background
+	background->Draw();
 	//------------------------------------------------------------------------
 	// Example Sprite Code....
-	testSprite->Draw();
+	npc->Draw();
+	player->Draw();
 	//------------------------------------------------------------------------
 
 	//------------------------------------------------------------------------
 	// Example Text.
 	//------------------------------------------------------------------------
-	App::Print(100, 100, "Sample Text");
+	App::Print(100, 100, "A career concious burglary student...");
 
 	//------------------------------------------------------------------------
 	// Example Line Drawing.
@@ -143,7 +163,7 @@ void Render()
 		float ey = 700 - cosf(a + i * 0.1f)*60.0f;
 		g = (float)i / 20.0f;
 		b = (float)i / 20.0f;
-		App::DrawLine(sx, sy, ex, ey,r,g,b);
+		//App::DrawLine(sx, sy, ex, ey,r,g,b);
 	}
 }
 //------------------------------------------------------------------------
@@ -154,6 +174,8 @@ void Shutdown()
 {	
 	//------------------------------------------------------------------------
 	// Example Sprite Code....
-	delete testSprite;
+	delete player;
+	delete npc;
+	delete background;
 	//------------------------------------------------------------------------
 }
