@@ -17,12 +17,18 @@ CSimpleSprite *player;
 CSimpleSprite* background;
 CSimpleSprite* npc;        // NPC
 bool canRob = true;  // can npc be pickpocketed
+const float WALK_SPEED = 1.0f;
+const float RUN_SPEED = 2.5f;
+
+
+
 enum
 {
-	ANIM_FORWARDS,
-	ANIM_BACKWARDS,
-	ANIM_LEFT,
-	ANIM_RIGHT,
+	ANIM_IDLE,
+	ANIM_HIDE,
+	ANIM_WALK,
+	ANIM_STEAL,
+	ANIM_RUN
 };
 //------------------------------------------------------------------------
 
@@ -33,25 +39,26 @@ void Init()
 {
 	// background
 	background = App::CreateSprite(".\\TestData\\background.png", 1, 1);
-	background->SetPosition(600.0f, 400.0f);
-	background->SetScale(1.0f);
+	background->SetPosition(500.0f, 400.0f);
+	background->SetScale(0.6f);
 	//------------------------------------------------------------------------
 	// npc
 	npc = App::CreateSprite(".\\TestData\\test_npc.png", 4, 1); // 4 frame sprite, 1 row
-	npc->SetPosition(450.0f, 400.0f);
+	npc->SetPosition(450.0f, 250.0f);
 	npc->SetScale(2.0f);
 	npc->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
 	npc->SetAnimation(0);
 	// 
 	// Example Sprite Code....
-	player = App::CreateSprite(".\\TestData\\Test.bmp", 8, 4);
-	player->SetPosition(400.0f, 400.0f);
-	float speed = 1.0f / 15.0f;
-	player->CreateAnimation(ANIM_BACKWARDS, speed, { 0,1,2,3,4,5,6,7 });
-	player->CreateAnimation(ANIM_LEFT, speed, { 8,9,10,11,12,13,14,15 });
-	player->CreateAnimation(ANIM_RIGHT, speed, { 16,17,18,19,20,21,22,23 });
-	player->CreateAnimation(ANIM_FORWARDS, speed, { 24,25,26,27,28,29,30,31 });
-	player->SetScale(1.0f);
+	player = App::CreateSprite(".\\TestData\\player_sprite.png", 3,5);
+	player->SetPosition(400.0f, 250.0f);
+	float speed = 1.0f / 7.0f;
+	player->CreateAnimation(ANIM_IDLE, speed, { 0,1,2 });
+	player->CreateAnimation(ANIM_WALK, speed, { 3, 4, 5 });
+	player->CreateAnimation(ANIM_HIDE, speed, { 9, 10, 11 });
+	player->CreateAnimation(ANIM_STEAL, speed, { 12, 13, 14 });
+	player->CreateAnimation(ANIM_RUN, speed, { 6, 7, 8 });
+	player->SetScale(0.15f);
 	//------------------------------------------------------------------------
 }
 
@@ -68,35 +75,33 @@ void Update(float deltaTime)
 	player->Update(deltaTime);
 	if (App::GetController().GetLeftThumbStickX() > 0.5f)
 	{
-		player->SetAnimation(ANIM_RIGHT);
+		bool sprinting = App::IsKeyPressed(VK_SHIFT);
+
+		player->SetAnimation(sprinting ? ANIM_RUN : ANIM_WALK);
+		player->SetFlipX(true);
 		float x, y;
 		player->GetPosition(x, y);
-		x += 1.0f;
-		player->SetPosition(x, y);
+		player->SetPosition(x + (sprinting ? RUN_SPEED : WALK_SPEED), y);
 	}
 	if (App::GetController().GetLeftThumbStickX() < -0.5f)
 	{
-		player->SetAnimation(ANIM_LEFT);
+		bool sprinting = App::IsKeyPressed(VK_SHIFT);
+
+		player->SetAnimation(sprinting ? ANIM_RUN : ANIM_WALK);
+		player->SetFlipX(false);
 		float x, y;
 		player->GetPosition(x, y);
-		x -= 1.0f;
-		player->SetPosition(x, y);
+		player->SetPosition(x - (sprinting ? RUN_SPEED : WALK_SPEED), y);
 	}
+	// STEAL LOGIC
     if (App::GetController().GetLeftThumbStickY() > 0.5f)
     {
-		player->SetAnimation(ANIM_FORWARDS);
-        float x, y;
-		player->GetPosition(x, y);
-        y += 1.0f;
-		player->SetPosition(x, y);
+		player->SetAnimation(ANIM_HIDE);
     }
+	// HIDE LOGIC
 	if (App::GetController().GetLeftThumbStickY() < -0.5f)
 	{
-		player->SetAnimation(ANIM_BACKWARDS);
-		float x, y;
-		player->GetPosition(x, y);
-		y -= 1.0f;
-		player->SetPosition(x, y);
+		player->SetAnimation(ANIM_STEAL);
 	}
 	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_UP, false))
 	{

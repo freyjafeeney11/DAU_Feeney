@@ -15,6 +15,7 @@
 class CSimpleSprite
 {
 public:
+    void SetFlipX(bool flip) { m_flipX = flip; CalculateUVs(); }
     // If width, height and UV coords are not provided then they will be derived from the texture size.
     CSimpleSprite(const char *fileName, unsigned int nColumns = 1, unsigned int nRows = 1 );
     void Update(float dt);
@@ -41,6 +42,7 @@ public:
     };
 
 private:
+    bool m_flipX = false;
     void CalculateUVs();
     GLuint m_texture;
     float m_xpos = 0.0F;

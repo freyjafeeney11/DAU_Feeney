@@ -64,17 +64,21 @@ void CSimpleSprite::CalculateUVs()
 
     m_width = m_texWidth * u;
     m_height = m_texHeight * v;
-    m_uvcoords[0] = u * column;
-    m_uvcoords[1] = v * (float)(row+1);
 
-    m_uvcoords[2] = u * (float)(column+1);
-    m_uvcoords[3] = v * (float)(row + 1);
+    float u0 = u * column;
+    float u1 = u * (column + 1);
+    float v0 = v * row;
+    float v1 = v * (row + 1);
 
-    m_uvcoords[4] = u * (float)(column + 1);
-    m_uvcoords[5] = v * row;
+    // flip horizontally by swapping U coords
+    if (m_flipX)
+        std::swap(u0, u1);
 
-    m_uvcoords[6] = u * column;
-    m_uvcoords[7] = v * row;
+    m_uvcoords[0] = u0; m_uvcoords[1] = v1;
+    m_uvcoords[2] = u1; m_uvcoords[3] = v1;
+    m_uvcoords[4] = u1; m_uvcoords[5] = v0;
+    m_uvcoords[6] = u0; m_uvcoords[7] = v0;
+
 }
 
 void CSimpleSprite::Draw()
