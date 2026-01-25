@@ -38,6 +38,13 @@ float npcSpawnDelay = 3.0f;   // seconds between appearances
 float npcSpeed = 0.8f;
 bool npcMoveRight = true;
 
+// pickpocket globals
+CSimpleSprite* npcPortrait;
+bool npcPickpocketable = true;
+bool inPickpocketUI = false;
+bool pickpocketSuccess = false;
+
+
 
 enum
 {
@@ -48,6 +55,19 @@ enum
 	ANIM_RUN
 };
 //------------------------------------------------------------------------
+// helper funcs not working yet
+bool IsPlayerNearNPC()
+{
+	float px, py, nx, ny;
+	player->GetPosition(px, py);
+	npc->GetPosition(nx, ny);
+
+	float dx = px - nx;
+	float dy = py - ny;
+	float distance = sqrtf(dx * dx + dy * dy);
+
+	return (distance < 50.0f);
+}
 
 //------------------------------------------------------------------------
 // Called before first update. Do any initial setup here.
@@ -58,6 +78,11 @@ void Init()
 	background = App::CreateSprite(".\\TestData\\background.png", 1, 1);
 	background->SetPosition(500.0f, 400.0f);
 	background->SetScale(0.6f);
+	// pickpocket dialogue panel
+	npcPortrait = App::CreateSprite(".\\TestData\\pickpocket_dialogue.png", 1, 1);
+	npcPortrait->SetPosition(500.0f, 400.0f);
+	npcPortrait->SetScale(0.5f);
+
 	//------------------------------------------------------------------------
 	// moving npc
 	roamingNPC = App::CreateSprite(".\\TestData\\test_npc.png", 4, 1);
@@ -118,6 +143,9 @@ void Init()
 void Update(float deltaTime)
 {
 	//------------------------------------------------------------------------
+	
+	// collider
+	// 
 	// moving npc
 	npcTimer += deltaTime / 1000.0f;
 
@@ -209,26 +237,20 @@ void Update(float deltaTime)
 	{
 		player->SetAnimation(ANIM_STEAL);
 	}
-	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_UP, false))
+	bool nearNPC = IsPlayerNearNPC();
+
+	// pickpocket UI
+	if (nearNPC && npcPickpocketable && !inPickpocketUI)
 	{
-		player->SetScale(player->GetScale() + 0.1f);
+		if (App::GetController().CheckButton(XINPUT_GAMEPAD_X, true))
+		{
+			inPickpocketUI = true;
+			int roll = rand() % 100;
+			pickpocketSuccess = (roll < 65); // 65% success chance
+		}
 	}
-	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_DOWN, false))
-	{
-		player->SetScale(player->GetScale() - 0.1f);
-	}
-	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_LEFT, false))
-	{
-		player->SetAngle(player->GetAngle() + 0.1f);
-	}
-	if (App::GetController().CheckButton(XINPUT_GAMEPAD_DPAD_RIGHT, false))
-	{
-		player->SetAngle(player->GetAngle() - 0.1f);
-	}
-	if (App::GetController().CheckButton(XINPUT_GAMEPAD_A, true))
-	{
-		player->SetAnimation(-1);
-	}
+
+
 	//------------------------------------------------------------------------
 	// Sample Sound.
 	//------------------------------------------------------------------------
@@ -247,7 +269,29 @@ void Render()
 	// background
 	background->Draw();
 	//------------------------------------------------------------------------
-	// Example Sprite Code....
+
+	// draw pickpocketable npc
+	if (npcPickpocketable && !inPickpocketUI)
+	{
+		npc->SetColor(0.6f, 1.0f, 0.6f); //  green
+	}
+	else
+	{
+		npc->SetColor(1.0f, 1.0f, 1.0f);
+	}
+
+	// pickpocket dialogue panel
+	if (inPickpocketUI)
+	{
+		npcPortrait->Draw();
+
+		if (pickpocketSuccess)
+			App::Print(420, 200, "Pickpocket SUCCESS");
+		else
+			App::Print(420, 200, "Pickpocket FAILED");
+	}
+
+
 	npc->Draw();
 
 	// crowd draw
@@ -260,13 +304,11 @@ void Render()
 		roamingNPC->Draw();
 	}
 	//------------------------------------------------------------------------
-
 	player->Draw();
 	// 
 	//------------------------------------------------------------------------
 	// Example Text.
 	//------------------------------------------------------------------------
-	App::Print(100, 100, "A career concious burglary student...");
 
 	//------------------------------------------------------------------------
 	// Example Line Drawing.
