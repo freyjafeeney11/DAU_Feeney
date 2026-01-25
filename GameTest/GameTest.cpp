@@ -62,11 +62,14 @@ bool IsPlayerNearNPC()
 	player->GetPosition(px, py);
 	npc->GetPosition(nx, ny);
 
+	float playerRadius = 20.0f;
+	float npcRadius = 100.0f;
+
 	float dx = px - nx;
 	float dy = py - ny;
 	float distance = sqrtf(dx * dx + dy * dy);
 
-	return (distance < 50.0f);
+	return (distance < (playerRadius + npcRadius));
 }
 
 //------------------------------------------------------------------------
@@ -204,9 +207,6 @@ void Update(float deltaTime)
 	}
 
 
-	// update npc
-	npc->Update(deltaTime);
-	player->Update(deltaTime);
 	if (App::GetController().GetLeftThumbStickX() > 0.5f)
 	{
 		bool sprinting = App::IsKeyPressed(VK_SHIFT);
@@ -237,6 +237,9 @@ void Update(float deltaTime)
 	{
 		player->SetAnimation(ANIM_STEAL);
 	}
+	// update npc
+	npc->Update(deltaTime);
+	player->Update(deltaTime);
 	bool nearNPC = IsPlayerNearNPC();
 
 	// pickpocket UI
@@ -268,6 +271,12 @@ void Render()
 {	
 	// background
 	background->Draw();
+
+	bool colliding = IsPlayerNearNPC();
+
+	if (colliding) {
+		App::Print(10, 100, "COLLIDING RN", 1.0f, 0.0f, 0.0f);
+	}
 	//------------------------------------------------------------------------
 
 	// draw pickpocketable npc
@@ -305,6 +314,23 @@ void Render()
 	}
 	//------------------------------------------------------------------------
 	player->Draw();
+
+	// debugging
+	float nx, ny;
+	npc->GetPosition(nx, ny);
+	float radius = 120.0f;
+	for (int i = 0; i < 12; i++) {
+		float angle1 = (i * 30.0f) * 3.1415f / 180.0f;
+		float angle2 = ((i+1) * 30.0f) * 3.1415f / 180.0f;
+
+		float x1 = nx + cos(angle1) * radius;
+		float y1 = ny + sin(angle1) * radius;
+		float x2 = nx + cos(angle2) * radius;
+		float y2 = ny + sin(angle2) * radius;
+
+		App::DrawLine(x1, y1, x2, y2, 1.0f, 0.0f, 0.0f);
+
+	}
 	// 
 	//------------------------------------------------------------------------
 	// Example Text.
