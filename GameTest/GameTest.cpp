@@ -16,10 +16,13 @@ CSimpleSprite *player;
 // metro bg
 CSimpleSprite* background;
 CSimpleSprite* npc;        // NPC
+// crowd clumps 
+const int NUM_CLUMPS = 4;
+CSimpleSprite* crowdClumps[NUM_CLUMPS];
+
 bool canRob = true;  // can npc be pickpocketed
 const float WALK_SPEED = 1.0f;
 const float RUN_SPEED = 2.5f;
-
 
 
 enum
@@ -48,7 +51,15 @@ void Init()
 	npc->SetScale(2.0f);
 	npc->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
 	npc->SetAnimation(0);
-	// 
+
+	// crowd stuff
+	for (int i = 0; i < NUM_CLUMPS; i++) {
+		crowdClumps[i] = App::CreateSprite(".\\TestData\\npc.png", 1, 1);
+		crowdClumps[i]->SetPosition(300.0f + (i * 200.0f), 350.0f);
+		crowdClumps[i]->SetScale(0.4f);
+	}
+
+
 	// Example Sprite Code....
 	player = App::CreateSprite(".\\TestData\\player_sprite.png", 3,5);
 	player->SetPosition(400.0f, 250.0f);
@@ -145,7 +156,11 @@ void Render()
 	npc->Draw();
 	player->Draw();
 	//------------------------------------------------------------------------
-
+	// crowd draw
+	for (int i = 0; i < NUM_CLUMPS; i++) {
+		crowdClumps[i]->Draw();
+	}
+	// 
 	//------------------------------------------------------------------------
 	// Example Text.
 	//------------------------------------------------------------------------
@@ -182,5 +197,9 @@ void Shutdown()
 	delete player;
 	delete npc;
 	delete background;
+
+	for (int i = 0; i < NUM_CLUMPS; i++) {
+		delete crowdClumps[i];
+	}
 	//------------------------------------------------------------------------
 }
