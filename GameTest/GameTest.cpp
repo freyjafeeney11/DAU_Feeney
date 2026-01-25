@@ -17,12 +17,26 @@ CSimpleSprite *player;
 CSimpleSprite* background;
 CSimpleSprite* npc;        // NPC
 // crowd clumps 
-const int NUM_CLUMPS = 4;
+const int NUM_CLUMPS = 3;
 CSimpleSprite* crowdClumps[NUM_CLUMPS];
+float clumpBaseX[NUM_CLUMPS];
+float clumpBaseY[NUM_CLUMPS];
+float clumpSwayOffset[NUM_CLUMPS];
+
 
 bool canRob = true;  // can npc be pickpocketed
-const float WALK_SPEED = 1.0f;
-const float RUN_SPEED = 2.5f;
+const float WALK_SPEED = 2.0f;
+const float RUN_SPEED = 4.0f;
+
+// moving npc
+
+CSimpleSprite* roamingNPC = nullptr;
+
+bool npcActive = false;
+float npcTimer = 0.0f;
+float npcSpawnDelay = 3.0f;   // seconds between appearances
+float npcSpeed = 0.8f;
+bool npcMoveRight = true;
 
 
 enum
@@ -45,18 +59,42 @@ void Init()
 	background->SetPosition(500.0f, 400.0f);
 	background->SetScale(0.6f);
 	//------------------------------------------------------------------------
+	// moving npc
+	roamingNPC = App::CreateSprite(".\\TestData\\test_npc.png", 4, 1);
+	roamingNPC->SetScale(4.0f);
+	roamingNPC->CreateAnimation(0, 0.2f, { 0,1,2,3 });
+	roamingNPC->SetAnimation(0);
+
+	// start off screen
+	roamingNPC->SetPosition(-200.0f, -200.0f);
+
 	// npc
 	npc = App::CreateSprite(".\\TestData\\test_npc.png", 4, 1); // 4 frame sprite, 1 row
-	npc->SetPosition(450.0f, 250.0f);
-	npc->SetScale(2.0f);
+	npc->SetPosition(600.0f, 300.0f);
+	npc->SetScale(4.0f);
 	npc->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
 	npc->SetAnimation(0);
 
-	// crowd stuff
-	for (int i = 0; i < NUM_CLUMPS; i++) {
-		crowdClumps[i] = App::CreateSprite(".\\TestData\\npc.png", 1, 1);
-		crowdClumps[i]->SetPosition(300.0f + (i * 200.0f), 350.0f);
-		crowdClumps[i]->SetScale(0.4f);
+	// crowd clumps 
+
+	float baseX = 300.0f;
+	float spacing = 60.0f;
+
+	for (int i = 0; i < NUM_CLUMPS; i++)
+	{
+		float jitterX = (rand() % 21) - 10; // -10 to +10
+		float jitterY = (rand() % 11) - 5;  // vertical variation
+
+		crowdClumps[i] = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1);
+		crowdClumps[i]->SetPosition(
+			baseX + (i * spacing) + jitterX,
+			350.0f + jitterY
+		);
+		crowdClumps[i]->SetScale(0.45f);
+		// adding some swaying
+		crowdClumps[i]->GetPosition(clumpBaseX[i], clumpBaseY[i]);
+		clumpSwayOffset[i] = (rand() % 100) / 100.0f * 6.28f; 
+
 	}
 
 
@@ -80,7 +118,64 @@ void Init()
 void Update(float deltaTime)
 {
 	//------------------------------------------------------------------------
-	// Example Sprite Code....
+	// moving npc
+	npcTimer += deltaTime / 1000.0f;
+
+	if (!npcActive)
+	{
+		// wait, then spawn
+		if (npcTimer >= npcSpawnDelay)
+		{
+			npcTimer = 0.0f;
+			npcActive = true;
+
+			// random direction
+			npcMoveRight = (rand() % 2) == 0;
+
+			float startX = npcMoveRight ? -100.0f : 1100.0f;
+			float startY = 260.0f;
+
+			roamingNPC->SetPosition(startX, startY);
+			roamingNPC->SetFlipX(npcMoveRight);
+			roamingNPC->SetAnimation(0);
+		}
+	}
+	else
+	{
+		// move across screen
+		float x, y;
+		roamingNPC->GetPosition(x, y);
+
+		x += (npcMoveRight ? npcSpeed : -npcSpeed);
+		roamingNPC->SetPosition(x, y);
+		roamingNPC->SetFlipX(!npcMoveRight);
+
+		// despawn when off screen
+		if (x > 1200.0f || x < -200.0f)
+		{
+			npcActive = false;
+			npcTimer = 0.0f;
+			roamingNPC->SetPosition(-200.0f, -200.0f);
+		}
+
+		roamingNPC->Update(deltaTime);
+	}
+	// crowd clumps
+	static float swayTime = 0.0f;
+	swayTime += deltaTime / 1000.0f;
+
+	for (int i = 0; i < NUM_CLUMPS; i++)
+	{
+		float swayX = sinf(swayTime * 1.2f + clumpSwayOffset[i]) * 2.0f;
+		float swayY = cosf(swayTime * 1.5f + clumpSwayOffset[i]) * 2.0f;
+
+		crowdClumps[i]->SetPosition(
+			clumpBaseX[i] + swayX,
+			clumpBaseY[i] + swayY
+		);
+	}
+
+
 	// update npc
 	npc->Update(deltaTime);
 	player->Update(deltaTime);
@@ -154,12 +249,19 @@ void Render()
 	//------------------------------------------------------------------------
 	// Example Sprite Code....
 	npc->Draw();
-	player->Draw();
-	//------------------------------------------------------------------------
+
 	// crowd draw
 	for (int i = 0; i < NUM_CLUMPS; i++) {
 		crowdClumps[i]->Draw();
 	}
+
+	if (npcActive)
+	{
+		roamingNPC->Draw();
+	}
+	//------------------------------------------------------------------------
+
+	player->Draw();
 	// 
 	//------------------------------------------------------------------------
 	// Example Text.
@@ -201,5 +303,7 @@ void Shutdown()
 	for (int i = 0; i < NUM_CLUMPS; i++) {
 		delete crowdClumps[i];
 	}
+	delete roamingNPC;
+
 	//------------------------------------------------------------------------
 }
