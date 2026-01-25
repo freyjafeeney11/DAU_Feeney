@@ -32,9 +32,9 @@ enum
 void Init()
 {
 	// background
-	background = App::CreateSprite(".\\TestData\\test_metro.jpg", 1, 1);
+	background = App::CreateSprite(".\\TestData\\background.png", 1, 1);
 	background->SetPosition(600.0f, 400.0f);
-	background->SetScale(0.6f);
+	background->SetScale(1.0f);
 	//------------------------------------------------------------------------
 	// npc
 	npc = App::CreateSprite(".\\TestData\\test_npc.png", 4, 1); // 4 frame sprite, 1 row
