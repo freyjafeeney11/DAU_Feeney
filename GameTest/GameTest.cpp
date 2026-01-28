@@ -23,6 +23,7 @@ float clumpBaseX[NUM_CLUMPS];
 float clumpBaseY[NUM_CLUMPS];
 float clumpSwayOffset[NUM_CLUMPS];
 
+bool pickpocketRolled = false;
 
 bool canRob = true;  // can npc be pickpocketed
 const float WALK_SPEED = 2.0f;
@@ -35,7 +36,7 @@ CSimpleSprite* roamingNPC = nullptr;
 bool npcActive = false;
 float npcTimer = 0.0f;
 float npcSpawnDelay = 3.0f;   // seconds between appearances
-float npcSpeed = 0.8f;
+float npcSpeed = 2.5f;
 bool npcMoveRight = true;
 
 // pickpocket globals
@@ -77,19 +78,21 @@ bool IsPlayerNearNPC()
 //------------------------------------------------------------------------
 void Init()
 {
+	// make npc pickpocketable
+	npcPickpocketable = true;
 	// background
-	background = App::CreateSprite(".\\TestData\\background.png", 1, 1);
+	background = App::CreateSprite(".\\TestData\\background2.png", 1, 1);
 	background->SetPosition(500.0f, 400.0f);
 	background->SetScale(0.6f);
 	// pickpocket dialogue panel
 	npcPortrait = App::CreateSprite(".\\TestData\\pickpocket_dialogue.png", 1, 1);
 	npcPortrait->SetPosition(500.0f, 400.0f);
-	npcPortrait->SetScale(0.5f);
+	npcPortrait->SetScale(0.6f);
 
 	//------------------------------------------------------------------------
 	// moving npc
-	roamingNPC = App::CreateSprite(".\\TestData\\test_npc.png", 4, 1);
-	roamingNPC->SetScale(4.0f);
+	roamingNPC = App::CreateSprite(".\\TestData\\npc_walk.png", 4, 1);
+	roamingNPC->SetScale(0.2f);
 	roamingNPC->CreateAnimation(0, 0.2f, { 0,1,2,3 });
 	roamingNPC->SetAnimation(0);
 
@@ -97,9 +100,9 @@ void Init()
 	roamingNPC->SetPosition(-200.0f, -200.0f);
 
 	// npc
-	npc = App::CreateSprite(".\\TestData\\test_npc.png", 4, 1); // 4 frame sprite, 1 row
-	npc->SetPosition(600.0f, 300.0f);
-	npc->SetScale(4.0f);
+	npc = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1); // 4 frame sprite, 1 row
+	npc->SetPosition(600.0f, 340.0f);
+	npc->SetScale(0.5f);
 	npc->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
 	npc->SetAnimation(0);
 
@@ -147,16 +150,26 @@ void Update(float deltaTime)
 {
 	//------------------------------------------------------------------------
 	
+	// close pickpocket UI with ESC
+	if (inPickpocketUI && App::IsKeyPressed(VK_CONTROL))
+	{
+		inPickpocketUI = false;
+	}
+
 	// collider
-	// 
+	
 	// moving npc
 	npcTimer += deltaTime / 1000.0f;
 
 	if (!npcActive)
 	{
-		// wait, then spawn
+		// wait then spawn
 		if (npcTimer >= npcSpawnDelay)
 		{
+			// not sure if i want these here yet
+			//npcPickpocketable = true;
+			//inPickpocketUI = false;
+
 			npcTimer = 0.0f;
 			npcActive = true;
 
@@ -164,7 +177,7 @@ void Update(float deltaTime)
 			npcMoveRight = (rand() % 2) == 0;
 
 			float startX = npcMoveRight ? -100.0f : 1100.0f;
-			float startY = 260.0f;
+			float startY = 280.0f;
 
 			roamingNPC->SetPosition(startX, startY);
 			roamingNPC->SetFlipX(npcMoveRight);
@@ -245,11 +258,9 @@ void Update(float deltaTime)
 	// pickpocket UI
 	if (nearNPC && npcPickpocketable && !inPickpocketUI)
 	{
-		if (App::GetController().CheckButton(XINPUT_GAMEPAD_X, true))
+		if (App::IsKeyPressed(VK_SPACE))
 		{
 			inPickpocketUI = true;
-			int roll = rand() % 100;
-			pickpocketSuccess = (roll < 65); // 65% success chance
 		}
 	}
 
@@ -275,30 +286,20 @@ void Render()
 	bool colliding = IsPlayerNearNPC();
 
 	if (colliding) {
-		App::Print(10, 100, "COLLIDING RN", 1.0f, 0.0f, 0.0f);
+		App::Print(10, 100, "Press Space to Inspect", 1.0f, 0.0f, 0.0f);
 	}
 	//------------------------------------------------------------------------
 
 	// draw pickpocketable npc
 	if (npcPickpocketable && !inPickpocketUI)
 	{
-		npc->SetColor(0.6f, 1.0f, 0.6f); //  green
+		npc->SetColor(1.0f, 1.0f, 1.0f); //  green
 	}
 	else
 	{
 		npc->SetColor(1.0f, 1.0f, 1.0f);
 	}
 
-	// pickpocket dialogue panel
-	if (inPickpocketUI)
-	{
-		npcPortrait->Draw();
-
-		if (pickpocketSuccess)
-			App::Print(420, 200, "Pickpocket SUCCESS");
-		else
-			App::Print(420, 200, "Pickpocket FAILED");
-	}
 
 
 	npc->Draw();
@@ -307,30 +308,41 @@ void Render()
 	for (int i = 0; i < NUM_CLUMPS; i++) {
 		crowdClumps[i]->Draw();
 	}
+	//------------------------------------------------------------------------
+	player->Draw();
 
 	if (npcActive)
 	{
 		roamingNPC->Draw();
 	}
-	//------------------------------------------------------------------------
-	player->Draw();
 
-	// debugging
-	float nx, ny;
-	npc->GetPosition(nx, ny);
-	float radius = 120.0f;
-	for (int i = 0; i < 12; i++) {
-		float angle1 = (i * 30.0f) * 3.1415f / 180.0f;
-		float angle2 = ((i+1) * 30.0f) * 3.1415f / 180.0f;
+	// pickpocket dialogue panel
+	if (inPickpocketUI)
+	{
+		npcPortrait->Draw();
 
-		float x1 = nx + cos(angle1) * radius;
-		float y1 = ny + sin(angle1) * radius;
-		float x2 = nx + cos(angle2) * radius;
-		float y2 = ny + sin(angle2) * radius;
+		App::Print(10, 100, "Press W to Pickpocket", 1.0f, 0.0f, 0.0f);
 
-		App::DrawLine(x1, y1, x2, y2, 1.0f, 0.0f, 0.0f);
+		if (!pickpocketRolled &&
+			App::GetController().GetLeftThumbStickY() < -0.5f)
+		{
+			pickpocketRolled = true;
 
+			player->SetAnimation(ANIM_STEAL);
+
+			int roll = rand() % 100;
+			pickpocketSuccess = (roll < 65);
+		}
+
+		if (pickpocketRolled)
+		{
+			if (pickpocketSuccess)
+				App::Print(420, 200, "Pickpocket SUCCESS");
+			else
+				App::Print(420, 200, "Pickpocket FAILED");
+		}
 	}
+
 	// 
 	//------------------------------------------------------------------------
 	// Example Text.
@@ -338,7 +350,7 @@ void Render()
 
 	//------------------------------------------------------------------------
 	// Example Line Drawing.
-	//------------------------------------------------------------------------
+	//-----------------------0.7-------------------------------------------------
 	static float a = 0.0f;
 	float r = 1.0f;
 	float g = 1.0f;
