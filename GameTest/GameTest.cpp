@@ -9,13 +9,14 @@
 #include "app\app.h"
 //------------------------------------------------------------------------
 
-//------------------------------------------------------------------------
-// Eample data....
-//------------------------------------------------------------------------
+// inventory
+CSimpleSprite *inventory_screen;
+
 CSimpleSprite *player;
 // metro bg
 CSimpleSprite* background;
-CSimpleSprite* npc;        // NPC
+CSimpleSprite* rosamund;        // NPC
+CSimpleSprite* randy;        // NPC
 // crowd clumps 
 const int NUM_CLUMPS = 3;
 const int MEMBERS_PER_CLUMP = 5;
@@ -76,7 +77,7 @@ bool IsPlayerNearNPC()
 {
 	float px, py, nx, ny;
 	player->GetPosition(px, py);
-	npc->GetPosition(nx, ny);
+	rosamund->GetPosition(nx, ny);
 
 	float playerRadius = 20.0f;
 	float npcRadius = 100.0f;
@@ -99,6 +100,12 @@ void Init()
 	background = App::CreateSprite(".\\TestData\\background2.png", 1, 1);
 	background->SetPosition(500.0f, 400.0f);
 	background->SetScale(0.6f);
+
+	//inventory
+	inventory_screen = App::CreateSprite(".\\TestData\\Inventory.png", 1, 1);
+	inventory_screen->SetPosition(500.0f, 400.0f);
+	inventory_screen->SetScale(0.6f);
+
 	// pickpocket dialogue panel
 	npcPortrait = App::CreateSprite(".\\TestData\\pickpocket_dialogue.png", 1, 1);
 	npcPortrait->SetPosition(500.0f, 400.0f);
@@ -115,11 +122,18 @@ void Init()
 	roamingNPC->SetPosition(-200.0f, -200.0f);
 
 	// npc
-	npc = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1); // 4 frame sprite, 1 row
-	npc->SetPosition(600.0f, 340.0f);
-	npc->SetScale(0.5f);
-	npc->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
-	npc->SetAnimation(0);
+	rosamund = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1); // 4 frame sprite, 1 row
+	rosamund->SetPosition(600.0f, 340.0f);
+	rosamund->SetScale(0.5f);
+	rosamund->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
+	rosamund->SetAnimation(0);
+
+	// randy
+	randy = App::CreateSprite(".\\TestData\\randy.png", 1, 1); // 4 frame sprite, 1 row
+	randy->SetPosition(350.0f, 340.0f);
+	randy->SetScale(0.5f);
+	randy->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
+	randy->SetAnimation(0);
 
 	// crowd clumps 
 
@@ -281,7 +295,7 @@ void Update(float deltaTime)
 		player->SetAnimation(ANIM_STEAL);
 	}
 	// update npc
-	npc->Update(deltaTime);
+	rosamund->Update(deltaTime);
 	player->Update(deltaTime);
 	bool nearNPC = IsPlayerNearNPC();
 
@@ -316,23 +330,23 @@ void Render()
 	bool colliding = IsPlayerNearNPC();
 
 	if (colliding) {
-		App::Print(10, 100, "Press Space to Inspect", 1.0f, 0.0f, 0.0f);
+		App::Print(10, 100, "Press Space to view inventory", 1.0f, 0.0f, 0.0f);
 	}
 	//------------------------------------------------------------------------
 
 	// draw pickpocketable npc
 	if (npcPickpocketable && !inPickpocketUI)
 	{
-		npc->SetColor(1.0f, 1.0f, 1.0f); //  green
+		rosamund->SetColor(1.0f, 1.0f, 1.0f); //  green
 	}
 	else
 	{
-		npc->SetColor(1.0f, 1.0f, 1.0f);
+		rosamund->SetColor(1.0f, 1.0f, 1.0f);
 	}
 
 
 
-	npc->Draw();
+	rosamund->Draw();
 
 	// crowd draw
 	for (int i = 0; i < NUM_CLUMPS; i++)
@@ -345,6 +359,8 @@ void Render()
 
 	player->Draw();
 
+	randy->Draw();
+
 	if (npcActive)
 	{
 		roamingNPC->Draw();
@@ -353,9 +369,11 @@ void Render()
 	// pickpocket dialogue panel
 	if (inPickpocketUI)
 	{
-		npcPortrait->Draw();
+		inventory_screen->Draw();
 
-		App::Print(10, 100, "Press W to Pickpocket", 1.0f, 0.0f, 0.0f);
+		App::Print(10, 100, "Press W to confirm Pickpocket", 1.0f, 0.0f, 0.0f);
+
+		// add here the second overlay of inventory depending on the npc
 
 		if (!pickpocketRolled &&
 			App::GetController().GetLeftThumbStickY() < -0.5f)
@@ -411,7 +429,7 @@ void Shutdown()
 	//------------------------------------------------------------------------
 	// Example Sprite Code....
 	delete player;
-	delete npc;
+	delete rosamund;
 	delete background;
 
 	for (int i = 0; i < NUM_CLUMPS; i++)
@@ -423,6 +441,7 @@ void Shutdown()
 	}
 
 	delete roamingNPC;
+	delete inventory_screen;
 
 	//------------------------------------------------------------------------
 }
