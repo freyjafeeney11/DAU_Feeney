@@ -8,9 +8,37 @@
 //------------------------------------------------------------------------
 #include "app\app.h"
 //------------------------------------------------------------------------
-
-// inventory
+// INVENTORY STUFF
 CSimpleSprite *inventory_screen;
+// overlays
+CSimpleSprite* rosamund_inv_sprite;
+CSimpleSprite* randy_inv_sprite;
+// navigation
+CSimpleSprite* icon_gold;
+CSimpleSprite* icon_letter;
+CSimpleSprite* icon_flashdrive;
+CSimpleSprite* ui_cursor;       // cursor
+int currentSlot = 0;
+bool navButtonDown = false;  // prevent super fast scrolling
+
+// items available
+enum { ITEM_NONE, ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_LETTER };
+
+// loot tables
+int rosamundLoot[4] = { ITEM_GOLD, ITEM_LETTER, ITEM_NONE, ITEM_NONE };
+int randyLoot[4] = { ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_NONE, ITEM_GOLD };
+
+// coords
+float slotCoords[6][2] = {
+	{ 190.0f, 600.0f },
+	{ 310.0f, 600.0f },
+	{ 430.0f, 600.0f },
+	{ 190.0f, 450.0f },
+	{ 310.0f, 450.0f },
+	{ 430.0f, 450.0f } 
+};
+
+//-------------------
 
 CSimpleSprite *player;
 // metro bg
@@ -43,7 +71,10 @@ bool npcPickpocketable = true;
 bool inPickpocketUI = false;
 bool pickpocketSuccess = false;
 
-
+// NEW COLLISION GLOBALS
+std::vector<CSimpleSprite*> npcList; // list of NPCs to collide with
+CSimpleSprite* activeNPC = nullptr;  // NPC we are currently near
+// -----------------------------
 
 enum
 {
@@ -77,16 +108,27 @@ bool IsPlayerNearNPC()
 {
 	float px, py, nx, ny;
 	player->GetPosition(px, py);
-	rosamund->GetPosition(nx, ny);
+
+	activeNPC = nullptr;
 
 	float playerRadius = 20.0f;
-	float npcRadius = 100.0f;
+	float npcRadius = 100.0f; // might need to be 100
 
-	float dx = px - nx;
-	float dy = py - ny;
-	float distance = sqrtf(dx * dx + dy * dy);
+	for (CSimpleSprite* npc : npcList)
+	{
+		npc->GetPosition(nx, ny);
+		float dx = px - nx;
+		float dy = py - ny;
+		float distance = sqrtf(dx * dx + dy * dy);
 
-	return (distance < (playerRadius + npcRadius));
+		if (distance < (playerRadius + npcRadius))
+		{
+			activeNPC = npc;
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //------------------------------------------------------------------------
@@ -105,6 +147,32 @@ void Init()
 	inventory_screen = App::CreateSprite(".\\TestData\\Inventory.png", 1, 1);
 	inventory_screen->SetPosition(500.0f, 400.0f);
 	inventory_screen->SetScale(0.6f);
+
+	//overlays
+	rosamund_inv_sprite = App::CreateSprite(".\\TestData\\rosamund_inventory.png", 1, 1);
+	rosamund_inv_sprite->SetPosition(500.0f, 400.0f);
+	rosamund_inv_sprite->SetScale(0.6f);
+
+	randy_inv_sprite = App::CreateSprite(".\\TestData\\randy_inventory.png", 1, 1);
+	randy_inv_sprite->SetPosition(500.0f, 400.0f);
+	randy_inv_sprite->SetScale(0.6f);
+
+	// inventory items
+	icon_gold = App::CreateSprite(".\\TestData\\gold_icon.png", 1, 1);
+	icon_gold->SetPosition(500.0f, 400.0f); // Center of screen overlay
+	icon_gold->SetScale(0.6f);
+
+	icon_flashdrive = App::CreateSprite(".\\TestData\\flashdrive_icon.png", 1, 1);
+	icon_flashdrive->SetPosition(500.0f, 400.0f);
+	icon_flashdrive->SetScale(0.6f);
+
+	icon_letter = App::CreateSprite(".\\TestData\\Letter_Icon.png", 1, 1);
+	icon_letter->SetPosition(500.0f, 400.0f);
+	icon_letter->SetScale(0.6f);
+
+	// temporary cursor
+	ui_cursor = App::CreateSprite(".\\TestData\\mask_temp.png", 1, 1);
+	ui_cursor->SetScale(0.4f);
 
 	// pickpocket dialogue panel
 	npcPortrait = App::CreateSprite(".\\TestData\\pickpocket_dialogue.png", 1, 1);
@@ -132,8 +200,12 @@ void Init()
 	randy = App::CreateSprite(".\\TestData\\randy.png", 1, 1); // 4 frame sprite, 1 row
 	randy->SetPosition(350.0f, 340.0f);
 	randy->SetScale(0.5f);
-	randy->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
+	randy->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim coming soon
 	randy->SetAnimation(0);
+
+	// adding npcs to collision list
+	npcList.push_back(rosamund);
+	npcList.push_back(randy);
 
 	// crowd clumps 
 
@@ -299,6 +371,13 @@ void Update(float deltaTime)
 	player->Update(deltaTime);
 	bool nearNPC = IsPlayerNearNPC();
 
+	// close inventory ui if not near anymore
+	if (!nearNPC && inPickpocketUI)
+	{
+		inPickpocketUI = false;
+		pickpocketRolled = false; // reset the minigame
+	}
+
 	// pickpocket UI
 	if (nearNPC && npcPickpocketable && !inPickpocketUI)
 	{
@@ -307,7 +386,51 @@ void Update(float deltaTime)
 			inPickpocketUI = true;
 		}
 	}
+	
+	// try adding in the nav 6 slot ver
+	if (inPickpocketUI)
+	{
+		if (!navButtonDown)
+		{
+			if (App::IsKeyPressed(VK_RIGHT)) {
+				if (currentSlot == 0) currentSlot = 1;
+				else if (currentSlot == 1) currentSlot = 2;
+				else if (currentSlot == 2) currentSlot = 0;
 
+				else if (currentSlot == 3) currentSlot = 4;
+				else if (currentSlot == 4) currentSlot = 5;
+				else if (currentSlot == 5) currentSlot = 3;
+				navButtonDown = true;
+			}
+			if (App::IsKeyPressed(VK_LEFT)) {
+				if (currentSlot == 1) currentSlot = 0;
+				else if (currentSlot == 2) currentSlot = 1;
+				else if (currentSlot == 0) currentSlot = 2; 
+
+				else if (currentSlot == 4) currentSlot = 3;
+				else if (currentSlot == 5) currentSlot = 4;
+				else if (currentSlot == 3) currentSlot = 5;
+				navButtonDown = true;
+			}
+			if (App::IsKeyPressed(VK_DOWN)) {
+				if (currentSlot >= 0 && currentSlot <= 2) {
+					currentSlot += 3;
+				}
+				navButtonDown = true;
+			}
+			if (App::IsKeyPressed(VK_UP)) {
+				if (currentSlot >= 3 && currentSlot <= 5) {
+					currentSlot -= 3;
+				}
+				navButtonDown = true;
+			}
+		}
+		if (!App::IsKeyPressed(VK_RIGHT) && !App::IsKeyPressed(VK_LEFT) &&
+			!App::IsKeyPressed(VK_DOWN) && !App::IsKeyPressed(VK_UP))
+		{
+			navButtonDown = false;
+		}
+	}
 
 	//------------------------------------------------------------------------
 	// Sample Sound.
@@ -371,6 +494,40 @@ void Render()
 	{
 		inventory_screen->Draw();
 
+		// draw overlay
+		if (activeNPC == rosamund) {
+			rosamund_inv_sprite->Draw();
+		}
+		else if (activeNPC == randy) {
+			randy_inv_sprite->Draw();
+		}
+
+		// draw cursor at coordinates
+		ui_cursor->SetPosition(slotCoords[currentSlot][0], slotCoords[currentSlot][1]);
+		ui_cursor->Draw();
+
+		// what is the item
+		int itemID = ITEM_NONE;
+
+		if (activeNPC == rosamund) {
+			itemID = rosamundLoot[currentSlot];
+		}
+		else if (activeNPC == randy) {
+			itemID = randyLoot[currentSlot];
+		}
+
+		// draw overlay
+		if (itemID == ITEM_GOLD) {
+			icon_gold->Draw();
+		}
+		else if (itemID == ITEM_FLASHDRIVE) {
+			icon_flashdrive->Draw();
+		}
+		else if (itemID == ITEM_LETTER) {
+			icon_letter->Draw();
+		}
+		// -----------------------------------------
+
 		App::Print(10, 100, "Press W to confirm Pickpocket", 1.0f, 0.0f, 0.0f);
 
 		// add here the second overlay of inventory depending on the npc
@@ -393,6 +550,8 @@ void Render()
 			else
 				App::Print(420, 200, "Pickpocket FAILED");
 		}
+
+		// ------------------------------------------------
 	}
 
 	// 
@@ -442,6 +601,12 @@ void Shutdown()
 
 	delete roamingNPC;
 	delete inventory_screen;
+	delete rosamund_inv_sprite;
+	delete randy_inv_sprite;
+	delete icon_gold;
+	delete icon_flashdrive;
+	delete icon_letter;
+	delete ui_cursor;
 
 	//------------------------------------------------------------------------
 }
