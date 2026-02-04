@@ -17,6 +17,12 @@ CSimpleSprite* randy_inv_sprite;
 CSimpleSprite* icon_gold;
 CSimpleSprite* icon_letter;
 CSimpleSprite* icon_flashdrive;
+
+// smaller icons
+CSimpleSprite* icon_gold_small;
+CSimpleSprite* icon_letter_small;
+CSimpleSprite* icon_flashdrive_small;
+
 CSimpleSprite* ui_cursor;       // cursor
 int currentSlot = 0;
 bool navButtonDown = false;  // prevent super fast scrolling
@@ -25,17 +31,17 @@ bool navButtonDown = false;  // prevent super fast scrolling
 enum { ITEM_NONE, ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_LETTER };
 
 // loot tables
-int rosamundLoot[4] = { ITEM_GOLD, ITEM_LETTER, ITEM_NONE, ITEM_NONE };
-int randyLoot[4] = { ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_NONE, ITEM_GOLD };
+int rosamundLoot[6] = { ITEM_GOLD, ITEM_LETTER, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+int randyLoot[6] = { ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 
 // coords
 float slotCoords[6][2] = {
 	{ 190.0f, 600.0f },
 	{ 310.0f, 600.0f },
-	{ 430.0f, 600.0f },
+	{ 450.0f, 600.0f },
 	{ 190.0f, 450.0f },
 	{ 310.0f, 450.0f },
-	{ 430.0f, 450.0f } 
+	{ 450.0f, 450.0f } 
 };
 
 //-------------------
@@ -154,15 +160,29 @@ void Init()
 	inventory_screen->SetScale(0.6f);
 
 	//overlays
-	rosamund_inv_sprite = App::CreateSprite(".\\TestData\\rosamund_inventory.png", 1, 1);
+	rosamund_inv_sprite = App::CreateSprite(".\\TestData\\rosamund_portrait.png", 1, 1);
 	rosamund_inv_sprite->SetPosition(500.0f, 400.0f);
 	rosamund_inv_sprite->SetScale(0.6f);
 
-	randy_inv_sprite = App::CreateSprite(".\\TestData\\randy_inventory.png", 1, 1);
+	randy_inv_sprite = App::CreateSprite(".\\TestData\\randy_portrait.png", 1, 1);
 	randy_inv_sprite->SetPosition(500.0f, 400.0f);
 	randy_inv_sprite->SetScale(0.6f);
 
-	// inventory items
+	// inventory slot items
+	// inventory items detailed view
+	icon_gold_small = App::CreateSprite(".\\TestData\\gold_icon_small.png", 1, 1);
+	icon_gold_small->SetPosition(500.0f, 400.0f);
+	icon_gold_small->SetScale(0.6f);
+
+	icon_flashdrive_small = App::CreateSprite(".\\TestData\\flashdrive_icon_small.png", 1, 1);
+	icon_flashdrive_small->SetPosition(500.0f, 400.0f);
+	icon_flashdrive_small->SetScale(0.6f);
+
+	icon_letter_small = App::CreateSprite(".\\TestData\\Letter_Icon_small.png", 1, 1);
+	icon_letter_small->SetPosition(500.0f, 400.0f);
+	icon_letter_small->SetScale(0.6f);
+
+	// inventory items detailed view
 	icon_gold = App::CreateSprite(".\\TestData\\gold_icon.png", 1, 1);
 	icon_gold->SetPosition(500.0f, 400.0f);
 	icon_gold->SetScale(0.6f);
@@ -381,7 +401,7 @@ void Update(float deltaTime)
 	if (!nearNPC && inPickpocketUI)
 	{
 		inPickpocketUI = false;
-		pickpocketRolled = false; // reset the minigame
+		pickpocketRolled = false;
 	}
 
 	// pickpocket UI
@@ -389,6 +409,7 @@ void Update(float deltaTime)
 	{
 		if (App::IsKeyPressed(VK_SPACE))
 		{
+			showDiceResult = false;
 			inPickpocketUI = true;
 		}
 	}
@@ -437,7 +458,7 @@ void Update(float deltaTime)
 			navButtonDown = false;
 		}
 
-		// 2. STEAL ACTION (ENTER KEY)
+		// steal with enter
 		if (App::IsKeyPressed(VK_RETURN) && !enterButtonDown)
 		{
 			enterButtonDown = true;
@@ -497,8 +518,8 @@ void Render()
 
 	bool colliding = IsPlayerNearNPC();
 
-	if (colliding) {
-		App::Print(10, 100, "Press Space to view inventory", 1.0f, 0.0f, 0.0f);
+	if (colliding && !inPickpocketUI) {
+		App::Print(10, 100, "Press Space to view inventory", 0.0f, 0.0f, 0.0f);
 	}
 	//------------------------------------------------------------------------
 
@@ -539,7 +560,6 @@ void Render()
 	{
 		inventory_screen->Draw();
 
-		// draw overlay
 		if (activeNPC == rosamund) {
 			rosamund_inv_sprite->Draw();
 		}
@@ -547,50 +567,70 @@ void Render()
 			randy_inv_sprite->Draw();
 		}
 
-		// draw cursor at coordinates
+		// which table
+		int* currentTable = nullptr;
+		if (activeNPC == rosamund) currentTable = rosamundLoot;
+		else if (activeNPC == randy) currentTable = randyLoot;
+
+		if (currentTable != nullptr)
+		{
+			for (int i = 0; i < 6; i++)
+			{
+				int itemID = currentTable[i];
+				if (itemID == ITEM_GOLD) {
+					icon_gold_small->Draw();
+				}
+				else if (itemID == ITEM_FLASHDRIVE) {
+					icon_flashdrive_small->Draw();
+				}
+				else if (itemID == ITEM_LETTER) {
+					icon_letter_small->Draw();
+				}
+			}
+		}
+
+		// cursor
 		ui_cursor->SetPosition(slotCoords[currentSlot][0], slotCoords[currentSlot][1]);
 		ui_cursor->Draw();
+		if (currentTable != nullptr)
+		{
+			int selectedItem = currentTable[currentSlot];
 
-		// what is the item
-		int itemID = ITEM_NONE;
-
-		if (activeNPC == rosamund) {
-			itemID = rosamundLoot[currentSlot];
-		}
-		else if (activeNPC == randy) {
-			itemID = randyLoot[currentSlot];
-		}
-
-		// draw overlay
-		if (itemID == ITEM_GOLD) {
-			icon_gold->Draw();
-		}
-		else if (itemID == ITEM_FLASHDRIVE) {
-			icon_flashdrive->Draw();
-		}
-		else if (itemID == ITEM_LETTER) {
-			icon_letter->Draw();
+			if (selectedItem == ITEM_GOLD) {
+				icon_gold->Draw();
+			}
+			else if (selectedItem == ITEM_FLASHDRIVE) {
+				icon_flashdrive->Draw();
+			}
+			else if (selectedItem == ITEM_LETTER) {
+				icon_letter->Draw();
+			}
 		}
 
-		// Draw Text / Results
+		// draw results of die roll
 		if (showDiceResult)
 		{
 			char resultText[100];
+			char resultText1[100];
 			if (lastStealSuccess)
 			{
-				sprintf(resultText, "Success! (Rolled %d)", lastDiceRoll);
-				App::Print(420, 220, resultText, 0.0f, 1.0f, 0.0f); // Green
+				sprintf(resultText, "%d", lastDiceRoll);
+				sprintf(resultText1, "Success!");
+				App::Print(925, 275, resultText, 0.0f, 0.0f, 0.0f); // Green
+				App::Print(890, 190, resultText1, 0.0f, 1.0f, 0.0f); // Green
 			}
 			else
 			{
-				sprintf(resultText, "Failed... (Rolled %d)", lastDiceRoll);
-				App::Print(420, 220, resultText, 1.0f, 0.0f, 0.0f); // Red
+				sprintf(resultText, "%d", lastDiceRoll);
+				sprintf(resultText1, "Failure");
+				App::Print(925, 275, resultText, 0.0f, 0.0f, 0.0f); 
+				App::Print(890, 190, resultText1, 1.0f, 0.0f, 0.0f);
 			}
 		}
 		else
 		{
 			// Default instruction if no result showing
-			App::Print(10, 100, "Press Enter to Steal", 0.8f, 0.8f, 0.8f);
+			App::Print(10, 100, "Press Enter to Steal", 0.0f, 0.0f, 0.0f);
 		}
 	}
 }
@@ -621,6 +661,9 @@ void Shutdown()
 	delete icon_gold;
 	delete icon_flashdrive;
 	delete icon_letter;
+	delete icon_gold_small;
+	delete icon_flashdrive_small;
+	delete icon_letter_small;
 	delete ui_cursor;
 
 	//------------------------------------------------------------------------
