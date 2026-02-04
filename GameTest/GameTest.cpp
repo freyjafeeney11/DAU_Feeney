@@ -18,10 +18,7 @@ CSimpleSprite* background;
 CSimpleSprite* npc;        // NPC
 // crowd clumps 
 const int NUM_CLUMPS = 3;
-CSimpleSprite* crowdClumps[NUM_CLUMPS];
-float clumpBaseX[NUM_CLUMPS];
-float clumpBaseY[NUM_CLUMPS];
-float clumpSwayOffset[NUM_CLUMPS];
+const int MEMBERS_PER_CLUMP = 5;
 
 bool pickpocketRolled = false;
 
@@ -55,8 +52,26 @@ enum
 	ANIM_STEAL,
 	ANIM_RUN
 };
+
+struct CrowdMember
+{
+	CSimpleSprite* sprite;
+	float offsetX;
+	float offsetY;
+	float personalSwayOffset;
+};
+
+struct CrowdClump
+{
+	float baseX;
+	float baseY;
+	float swayOffset;
+	CrowdMember members[MEMBERS_PER_CLUMP];
+};
+
+CrowdClump crowdClumps[NUM_CLUMPS];
+
 //------------------------------------------------------------------------
-// helper funcs not working yet
 bool IsPlayerNearNPC()
 {
 	float px, py, nx, ny;
@@ -109,24 +124,29 @@ void Init()
 	// crowd clumps 
 
 	float baseX = 300.0f;
-	float spacing = 60.0f;
+	float spacing = 120.0f;
 
 	for (int i = 0; i < NUM_CLUMPS; i++)
 	{
-		float jitterX = (rand() % 21) - 10; // -10 to +10
-		float jitterY = (rand() % 11) - 5;  // vertical variation
+		crowdClumps[i].baseX = baseX + i * spacing;
+		crowdClumps[i].baseY = 350.0f;
+		crowdClumps[i].swayOffset = (rand() % 100) / 100.0f * 6.28f;
 
-		crowdClumps[i] = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1);
-		crowdClumps[i]->SetPosition(
-			baseX + (i * spacing) + jitterX,
-			350.0f + jitterY
-		);
-		crowdClumps[i]->SetScale(0.45f);
-		// adding some swaying
-		crowdClumps[i]->GetPosition(clumpBaseX[i], clumpBaseY[i]);
-		clumpSwayOffset[i] = (rand() % 100) / 100.0f * 6.28f; 
+		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
+		{
+			CrowdMember& m = crowdClumps[i].members[j];
 
+			m.sprite = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1);
+			m.sprite->SetScale(0.35f);
+
+			// spread people inside the clump
+			m.offsetX = (rand() % 41) - 20;   // -20 to +20
+			m.offsetY = (rand() % 31) - 15;
+
+			m.personalSwayOffset = (rand() % 100) / 100.0f * 6.28f;
+		}
 	}
+
 
 
 	// Example Sprite Code....
@@ -210,14 +230,24 @@ void Update(float deltaTime)
 
 	for (int i = 0; i < NUM_CLUMPS; i++)
 	{
-		float swayX = sinf(swayTime * 1.2f + clumpSwayOffset[i]) * 2.0f;
-		float swayY = cosf(swayTime * 1.5f + clumpSwayOffset[i]) * 2.0f;
+		CrowdClump& clump = crowdClumps[i];
 
-		crowdClumps[i]->SetPosition(
-			clumpBaseX[i] + swayX,
-			clumpBaseY[i] + swayY
-		);
+		float clumpSwayX = sinf(swayTime + clump.swayOffset) * 2.0f;
+
+		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
+		{
+			CrowdMember& m = clump.members[j];
+
+			float personalSway =
+				sinf(swayTime * 1.5f + m.personalSwayOffset) * 1.5f;
+
+			m.sprite->SetPosition(
+				clump.baseX + clumpSwayX + m.offsetX,
+				clump.baseY + personalSway + m.offsetY
+			);
+		}
 	}
+
 
 
 	if (App::GetController().GetLeftThumbStickX() > 0.5f)
@@ -305,10 +335,14 @@ void Render()
 	npc->Draw();
 
 	// crowd draw
-	for (int i = 0; i < NUM_CLUMPS; i++) {
-		crowdClumps[i]->Draw();
+	for (int i = 0; i < NUM_CLUMPS; i++)
+	{
+		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
+		{
+			crowdClumps[i].members[j].sprite->Draw();
+		}
 	}
-	//------------------------------------------------------------------------
+
 	player->Draw();
 
 	if (npcActive)
@@ -380,9 +414,14 @@ void Shutdown()
 	delete npc;
 	delete background;
 
-	for (int i = 0; i < NUM_CLUMPS; i++) {
-		delete crowdClumps[i];
+	for (int i = 0; i < NUM_CLUMPS; i++)
+	{
+		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
+		{
+			delete crowdClumps[i].members[j].sprite;
+		}
 	}
+
 	delete roamingNPC;
 
 	//------------------------------------------------------------------------
