@@ -49,12 +49,17 @@ CSimpleSprite* randy;        // NPC
 const int NUM_CLUMPS = 3;
 const int MEMBERS_PER_CLUMP = 5;
 
+// pickpocket stuff (steal mech)
+int lastDiceRoll = 0;
+bool showDiceResult = false;
+bool enterButtonDown = false;
+bool lastStealSuccess = false;
 bool pickpocketRolled = false;
-
-bool canRob = true;  // can npc be pickpocketed
+bool canRob = true;
 const float WALK_SPEED = 2.0f;
 const float RUN_SPEED = 4.0f;
-
+// ------------------------------
+// 
 // moving npc
 
 CSimpleSprite* roamingNPC = nullptr;
@@ -159,7 +164,7 @@ void Init()
 
 	// inventory items
 	icon_gold = App::CreateSprite(".\\TestData\\gold_icon.png", 1, 1);
-	icon_gold->SetPosition(500.0f, 400.0f); // Center of screen overlay
+	icon_gold->SetPosition(500.0f, 400.0f);
 	icon_gold->SetScale(0.6f);
 
 	icon_flashdrive = App::CreateSprite(".\\TestData\\flashdrive_icon.png", 1, 1);
@@ -356,6 +361,7 @@ void Update(float deltaTime)
 		player->GetPosition(x, y);
 		player->SetPosition(x - (sprinting ? RUN_SPEED : WALK_SPEED), y);
 	}
+
 	// STEAL LOGIC
     if (App::GetController().GetLeftThumbStickY() > 0.5f)
     {
@@ -429,6 +435,45 @@ void Update(float deltaTime)
 			!App::IsKeyPressed(VK_DOWN) && !App::IsKeyPressed(VK_UP))
 		{
 			navButtonDown = false;
+		}
+
+		// 2. STEAL ACTION (ENTER KEY)
+		if (App::IsKeyPressed(VK_RETURN) && !enterButtonDown)
+		{
+			enterButtonDown = true;
+			int* currentTable = nullptr;
+			int difficulty = 10;
+
+			if (activeNPC == rosamund) {
+				currentTable = rosamundLoot;
+				difficulty = 11;
+			}
+			else if (activeNPC == randy) {
+				currentTable = randyLoot;
+				difficulty = 14;
+			}
+			if (currentTable != nullptr && currentTable[currentSlot] != ITEM_NONE)
+			{
+				lastDiceRoll = (rand() % 20) + 1;
+
+				if (lastDiceRoll >= difficulty)
+				{
+					lastStealSuccess = true;
+					currentTable[currentSlot] = ITEM_NONE;
+				}
+				else
+				{
+					lastStealSuccess = false;
+				}
+
+				showDiceResult = true;
+			}
+		}
+
+		// Reset enter button
+		if (!App::IsKeyPressed(VK_RETURN))
+		{
+			enterButtonDown = false;
 		}
 	}
 
@@ -526,57 +571,27 @@ void Render()
 		else if (itemID == ITEM_LETTER) {
 			icon_letter->Draw();
 		}
-		// -----------------------------------------
 
-		App::Print(10, 100, "Press W to confirm Pickpocket", 1.0f, 0.0f, 0.0f);
-
-		// add here the second overlay of inventory depending on the npc
-
-		if (!pickpocketRolled &&
-			App::GetController().GetLeftThumbStickY() < -0.5f)
+		// Draw Text / Results
+		if (showDiceResult)
 		{
-			pickpocketRolled = true;
-
-			player->SetAnimation(ANIM_STEAL);
-
-			int roll = rand() % 100;
-			pickpocketSuccess = (roll < 65);
-		}
-
-		if (pickpocketRolled)
-		{
-			if (pickpocketSuccess)
-				App::Print(420, 200, "Pickpocket SUCCESS");
+			char resultText[100];
+			if (lastStealSuccess)
+			{
+				sprintf(resultText, "Success! (Rolled %d)", lastDiceRoll);
+				App::Print(420, 220, resultText, 0.0f, 1.0f, 0.0f); // Green
+			}
 			else
-				App::Print(420, 200, "Pickpocket FAILED");
+			{
+				sprintf(resultText, "Failed... (Rolled %d)", lastDiceRoll);
+				App::Print(420, 220, resultText, 1.0f, 0.0f, 0.0f); // Red
+			}
 		}
-
-		// ------------------------------------------------
-	}
-
-	// 
-	//------------------------------------------------------------------------
-	// Example Text.
-	//------------------------------------------------------------------------
-
-	//------------------------------------------------------------------------
-	// Example Line Drawing.
-	//-----------------------0.7-------------------------------------------------
-	static float a = 0.0f;
-	float r = 1.0f;
-	float g = 1.0f;
-	float b = 1.0f;
-	a += 0.1f;
-	for (int i = 0; i < 20; i++)
-	{
-
-		float sx = 200 + sinf(a + i * 0.1f)*60.0f;
-		float sy = 200 + cosf(a + i * 0.1f)*60.0f;
-		float ex = 700 - sinf(a + i * 0.1f)*60.0f;
-		float ey = 700 - cosf(a + i * 0.1f)*60.0f;
-		g = (float)i / 20.0f;
-		b = (float)i / 20.0f;
-		//App::DrawLine(sx, sy, ex, ey,r,g,b);
+		else
+		{
+			// Default instruction if no result showing
+			App::Print(10, 100, "Press Enter to Steal", 0.8f, 0.8f, 0.8f);
+		}
 	}
 }
 //------------------------------------------------------------------------
