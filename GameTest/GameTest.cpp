@@ -147,6 +147,7 @@ bool IsPlayerNearNPC()
 //------------------------------------------------------------------------
 void Init()
 {
+
 	// make npc pickpocketable
 	npcPickpocketable = true;
 	// background
