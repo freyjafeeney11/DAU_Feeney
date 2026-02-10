@@ -293,7 +293,7 @@ void Init()
 	// granny
 	granny = App::CreateSprite(".\\TestData\\granny_idle.png", 4, 1); // 4 frame sprite, 1 row
 	granny->SetPosition(695.0f, 340.0f);
-	granny->SetScale(0.18f);
+	granny->SetScale(0.16f);
 	granny->CreateAnimation(0, 0.4f, { 0,1,2,3 }); // idle anim
 	granny->SetAnimation(0);
 
