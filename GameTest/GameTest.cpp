@@ -81,6 +81,7 @@ CSimpleSprite *player;
 // metro bg
 CSimpleSprite* background;
 CSimpleSprite* rosamund;
+CSimpleSprite* generic;
 CSimpleSprite* granny;
 CSimpleSprite* randy;
 // crowd clumps 
@@ -326,11 +327,15 @@ void Init()
 	// start off screen
 	roamingNPC->SetPosition(-200.0f, -200.0f);
 
-	// rosamund
-	rosamund = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1); // 4 frame sprite, 1 row
-	rosamund->SetPosition(600.0f, 340.0f);
-	rosamund->SetScale(0.5f);
-	rosamund->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
+	// generic
+	generic = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1); // 4 frame sprite, 1 row
+	generic->SetPosition(600.0f, 340.0f);
+	generic->SetScale(0.5f);
+
+	rosamund = App::CreateSprite(".\\TestData\\rosamund_idle.png", 4, 1); // 4 frame sprite, 1 row
+	rosamund->SetPosition(590.0f, 360.0f);
+	rosamund->SetScale(0.2f);
+	rosamund->CreateAnimation(0, 0.4f, { 0,1,2,3 }); // idle anim
 	rosamund->SetAnimation(0);
 
 	NPCData ros;
@@ -342,8 +347,8 @@ void Init()
 
 	// granny
 	granny = App::CreateSprite(".\\TestData\\granny_idle.png", 4, 1); // 4 frame sprite, 1 row
-	granny->SetPosition(695.0f, 340.0f);
-	granny->SetScale(0.16f);
+	granny->SetPosition(710.0f, 300.0f);
+	granny->SetScale(0.14f);
 	granny->CreateAnimation(0, 0.4f, { 0,1,2,3 }); // idle animf
 	granny->SetAnimation(0);
 
