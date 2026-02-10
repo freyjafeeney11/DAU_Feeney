@@ -90,7 +90,7 @@ bool canRob = true;
 const float WALK_SPEED = 2.0f;
 const float RUN_SPEED = 4.0f;
 // ------------------------------
-// 
+
 // moving npc
 
 CSimpleSprite* roamingNPC = nullptr;
@@ -379,9 +379,6 @@ void Update(float deltaTime)
 		// wait then spawn
 		if (npcTimer >= npcSpawnDelay)
 		{
-			// not sure if i want these here yet
-			//npcPickpocketable = true;
-			//inPickpocketUI = false;
 
 			npcTimer = 0.0f;
 			npcActive = true;
