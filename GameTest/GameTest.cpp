@@ -694,7 +694,7 @@ void Update(float deltaTime)
 void Render()
 {
 	// image widths of backgrounds
-	float bgWidth = 1024.0f;
+	float bgWidth = 1075.0f;
 	float windowWidth = 1024.0f;
 
 	// repeating offset
