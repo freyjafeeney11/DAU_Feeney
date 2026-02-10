@@ -7,6 +7,14 @@
 #include <string>
 #include <ctime>
 //------------------------------------------------------------------------
+// starting camera stuff
+struct Camera {
+	float x = 0.0f;
+	float y = 0.0f;
+	float targetX = 0.0f;
+	float width = 1024.0f; // window width
+} g_camera;
+
 // INVENTORY STUFF
 CSimpleSprite* inventory_screen;
 CSimpleSprite* window;
@@ -148,6 +156,17 @@ struct CrowdClump
 CrowdClump crowdClumps[NUM_CLUMPS];
 
 //------------------------------------------------------------------------'helper functions
+void DrawInWorld(CSimpleSprite* sprite) {
+	if (!sprite) return;
+
+	float actualX, actualY;
+	sprite->GetPosition(actualX, actualY);
+
+	sprite->SetPosition(actualX - g_camera.x, actualY - g_camera.y);
+	sprite->Draw();
+
+	sprite->SetPosition(actualX, actualY);
+}
 
 NPCData* GetNPCDataFromSprite(CSimpleSprite* sprite)
 {
@@ -243,7 +262,7 @@ void Init()
 	// windows
 	window = App::CreateSprite(".\\TestData\\cityscape.png", 7, 1);
 	window->SetPosition(470.0f, 450.0f);
-	window->SetScale(0.55f);
+	window->SetScale(0.6f);
 	window->CreateAnimation(0, 0.5f, { 0, 1, 2, 3, 4, 5, 6 });
 	window->SetAnimation(0);
 
@@ -430,8 +449,15 @@ void Update(float deltaTime)
 		inPickpocketUI = false;
 	}
 
-	// collider
-	
+	// camera
+	float px, py;
+	player->GetPosition(px, py);
+	g_camera.x = px - 512.0f;
+
+	if (g_camera.x < 0)
+	{
+		g_camera.x = 0;
+	}
 	// moving npc
 	npcTimer += deltaTime / 1000.0f;
 
@@ -666,97 +692,101 @@ void Update(float deltaTime)
 }
 
 void Render()
-{	
-	// background
+{
+	// image widths of backgrounds
+	float bgWidth = 1024.0f;
+	float windowWidth = 1024.0f;
+
+	// repeating offset
+	float windowScrollX = fmodf(g_camera.x * 0.3f, windowWidth);
+	float bgScrollX = fmodf(g_camera.x, bgWidth);
+
+	// drawing windows
+	window->SetPosition(512.0f - windowScrollX, 450.0f);
 	window->Draw();
+	window->SetPosition(512.0f - windowScrollX + windowWidth, 450.0f);
+	window->Draw();
+
+	// drawing rain
+	rain->SetPosition(475.0f - windowScrollX, 450.0f);
 	rain->Draw();
+	rain->SetPosition(475.0f - windowScrollX + windowWidth, 450.0f);
+	rain->Draw();
+
+	// repeating train interior
+	background->SetPosition(500.0f - bgScrollX, 400.0f);
+	background->Draw();
+	background->SetPosition(500.0f - bgScrollX + bgWidth, 400.0f);
 	background->Draw();
 
+	//  WORLD OBJECTS 
 	bool colliding = (activeNPC != nullptr);
-
 	if (colliding && !inPickpocketUI) {
 		App::Print(10, 100, "Press Space to view inventory", 0.0f, 0.0f, 0.0f);
 	}
-	//------------------------------------------------------------------------
 
-	// draw pickpocketable npc
-	if (npcPickpocketable && !inPickpocketUI)
-	{
-		rosamund->SetColor(1.0f, 1.0f, 1.0f); //  green
-	}
-	else
-	{
-		rosamund->SetColor(1.0f, 1.0f, 1.0f);
-	}
-
-
-	rosamund->Draw();
+	rosamund->SetColor(1.0f, 1.0f, 1.0f);
+	DrawInWorld(rosamund);
 
 	if (App::IsKeyPressed('I'))
 	{
 		App::Print(100, 700, "--- YOUR INVENTORY ---", 1.0f, 1.0f, 1.0f);
-
-		for (int i = 0; i < playerInventory.size(); i++) {
+		for (int i = 0; i < (int)playerInventory.size(); i++) {
 			float yOffset = 650.0f - (i * 30.0f);
 			App::Print(100, yOffset, playerInventory[i].name.c_str(), 1.0f, 1.0f, 1.0f);
-			//if (i == playerInventory.size() - 1) {
-			//	App::Print(400, 400, playerInventory[i].flavorText.c_str(), 0.7f, 0.7f, 1.0f);
-			//}
 		}
 	}
 
 	for (int i = 0; i < NUM_CLUMPS; i++) {
 		for (int j = 0; j < MEMBERS_PER_CLUMP; j++) {
 			if (crowdClumps[i].members[j].offsetY < 0) {
-				crowdClumps[i].members[j].sprite->Draw();
+				DrawInWorld(crowdClumps[i].members[j].sprite);
 			}
 		}
 	}
 
-	player->Draw();
+	DrawInWorld(player);
 
 	for (int i = 0; i < NUM_CLUMPS; i++) {
 		for (int j = 0; j < MEMBERS_PER_CLUMP; j++) {
 			if (crowdClumps[i].members[j].offsetY >= 0) {
-				crowdClumps[i].members[j].sprite->Draw();
+				DrawInWorld(crowdClumps[i].members[j].sprite);
 			}
 		}
 	}
 
-	granny->Draw();
-
-	randy->Draw();
+	DrawInWorld(granny);
+	DrawInWorld(randy);
 
 	if (npcActive)
 	{
-		roamingNPC->Draw();
+		DrawInWorld(roamingNPC);
 	}
 
 	for (auto& npc : allNPCs)
 	{
 		if (npc.isAlerted)
 		{
-			DrawAlertIconAboveNPC(npc.sprite);
+			float ax, ay;
+			npc.sprite->GetPosition(ax, ay);
+			float worldHeight = npc.sprite->GetHeight() * npc.sprite->GetScale();
+			static float t = 0.0f;
+			t += 0.05f;
+			float bob = sinf(t) * 4.0f;
+			alertIcon->SetPosition(ax - g_camera.x, ay + (worldHeight * 0.5f) + 10.0f + bob);
+			alertIcon->Draw();
 		}
 	}
 
-	// pickpocket dialogue panel
+	// UI OBJECTS
 	if (inPickpocketUI)
 	{
 		inventory_screen->Draw();
 
-		if (activeNPC == rosamund) {
-			rosamund_inv_sprite->Draw();
-		}
-		else if (activeNPC == randy) {
-			randy_inv_sprite->Draw();
-		}
-		else if (activeNPC == granny) {
-			granny_inv_sprite->Draw();
-		}
+		if (activeNPC == rosamund) rosamund_inv_sprite->Draw();
+		else if (activeNPC == randy) randy_inv_sprite->Draw();
+		else if (activeNPC == granny) granny_inv_sprite->Draw();
 
-		// which table
-		// should improve this system
 		int* currentTable = nullptr;
 		if (activeNPC == rosamund) currentTable = rosamundLoot;
 		else if (activeNPC == randy) currentTable = randyLoot;
@@ -767,72 +797,47 @@ void Render()
 			for (int i = 0; i < 6; i++)
 			{
 				int itemID = currentTable[i];
-				if (itemID == ITEM_GOLD) {
-					icon_gold_small->Draw();
-				}
-				else if (itemID == ITEM_FLASHDRIVE) {
-					icon_flashdrive_small->Draw();
-				}
-				else if (itemID == ITEM_LETTER) {
-					icon_letter_small->Draw();
-				}
-				else if (itemID == ITEM_PICTURE) {
-					icon_picture_small->Draw();
-				}
+				if (itemID == ITEM_GOLD) icon_gold_small->Draw();
+				else if (itemID == ITEM_FLASHDRIVE) icon_flashdrive_small->Draw();
+				else if (itemID == ITEM_LETTER) icon_letter_small->Draw();
+				else if (itemID == ITEM_PICTURE) icon_picture_small->Draw();
 			}
 		}
 
-		// cursor
 		ui_cursor->SetPosition(slotCoords[currentSlot][0], slotCoords[currentSlot][1]);
 		ui_cursor->Draw();
+
 		if (currentTable != nullptr)
 		{
 			int selectedItem = currentTable[currentSlot];
-
-			if (selectedItem == ITEM_GOLD) {
-				icon_gold->Draw();
-			}
-			else if (selectedItem == ITEM_FLASHDRIVE) {
-				icon_flashdrive->Draw();
-			}
-			else if (selectedItem == ITEM_LETTER) {
-				icon_letter->Draw();
-			}
-			else if (selectedItem == ITEM_PICTURE) {
-				icon_picture->Draw();
-			}
+			if (selectedItem == ITEM_GOLD) icon_gold->Draw();
+			else if (selectedItem == ITEM_FLASHDRIVE) icon_flashdrive->Draw();
+			else if (selectedItem == ITEM_LETTER) icon_letter->Draw();
+			else if (selectedItem == ITEM_PICTURE) icon_picture->Draw();
 		}
 
-		// draw results of die roll
 		if (showDiceResult)
 		{
 			char resultText[100];
 			char resultText1[100];
+			sprintf(resultText, "%d", lastDiceRoll);
 			if (lastStealSuccess)
 			{
-				sprintf(resultText, "%d", lastDiceRoll);
 				sprintf(resultText1, "Success!");
-				App::Print(925, 275, resultText, 0.0f, 0.0f, 0.0f); // Green
-				App::Print(890, 190, resultText1, 0.0f, 1.0f, 0.0f); // Green
+				App::Print(925, 275, resultText, 0.0f, 0.0f, 0.0f);
+				App::Print(890, 190, resultText1, 0.0f, 1.0f, 0.0f);
 			}
 			else
 			{
-				sprintf(resultText, "%d", lastDiceRoll);
 				sprintf(resultText1, "Failure");
-				App::Print(925, 275, resultText, 0.0f, 0.0f, 0.0f); 
+				App::Print(925, 275, resultText, 0.0f, 0.0f, 0.0f);
 				App::Print(890, 190, resultText1, 1.0f, 0.0f, 0.0f);
 			}
 		}
 		else
 		{
-			// Default instruction if no result showing
 			App::Print(10, 100, "Press Enter to Steal", 0.0f, 0.0f, 0.0f);
 		}
-			NPCData* npcData = GetNPCDataFromSprite(activeNPC);
-	if (npcData && npcData->isAlerted)
-	{
-		App::Print(450, 400, "FAIL !", 1.0f, 0.0f, 0.0f);
-	}
 	}
 }
 
