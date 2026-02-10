@@ -14,15 +14,21 @@ CSimpleSprite* rain;
 // overlays
 CSimpleSprite* rosamund_inv_sprite;
 CSimpleSprite* randy_inv_sprite;
+CSimpleSprite* granny_inv_sprite;
+CSimpleSprite* alertIcon;
+
 // navigation
 CSimpleSprite* icon_gold;
 CSimpleSprite* icon_letter;
 CSimpleSprite* icon_flashdrive;
+CSimpleSprite* icon_picture;
 
 // smaller icons
 CSimpleSprite* icon_gold_small;
 CSimpleSprite* icon_letter_small;
 CSimpleSprite* icon_flashdrive_small;
+CSimpleSprite* icon_picture_small;
+
 
 CSimpleSprite* ui_cursor;
 int currentSlot = 0;
@@ -52,10 +58,11 @@ std::vector<NPCData> allNPCs;
 std::vector<Item> playerInventory;
 
 // items available
-enum { ITEM_NONE, ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_LETTER };
+enum { ITEM_NONE, ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_LETTER, ITEM_PICTURE};
 
 // loot tables
 int rosamundLoot[6] = { ITEM_GOLD, ITEM_LETTER, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+int grannyLoot[6] = { ITEM_GOLD, ITEM_PICTURE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 int randyLoot[6] = { ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 
 // coords
@@ -151,6 +158,33 @@ NPCData* GetNPCDataFromSprite(CSimpleSprite* sprite)
 	return nullptr;
 }
 
+void DrawAlertIconAboveNPC(CSimpleSprite* npc)
+{
+	if (!npc || !alertIcon) return;
+
+	float x, y;
+	npc->GetPosition(x, y);
+
+	float height = npc->GetHeight();
+	float scale = npc->GetScale();
+
+	float worldHeight = height * scale;
+
+	static float t = 0.0f;
+	t += 0.05f;
+
+	float bob = sinf(t) * 4.0f;
+
+	alertIcon->SetPosition(
+		x,
+		y + (worldHeight * 0.5f) + 10.0f + bob
+	);
+
+	alertIcon->Draw();
+}
+
+
+
 
 Item GetItemFromLibrary(int itemId) {
 	switch (itemId) {
@@ -160,6 +194,8 @@ Item GetItemFromLibrary(int itemId) {
 		return { ITEM_LETTER, "Perfumed Letter", "It says: idk ill come up with something", 0 };
 	case ITEM_FLASHDRIVE:
 		return { ITEM_FLASHDRIVE, "FlashDrive", "I wonder what's on this...", 100 };
+	case ITEM_PICTURE:
+		return { ITEM_PICTURE, "Old Photograph", "It's a photo of two people on a beach.", 100 };
 	default:
 		return { ITEM_NONE, "Empty Slot", "Put something here..", 0 };
 	}
@@ -223,13 +259,19 @@ void Init()
 	inventory_screen->SetScale(0.6f);
 
 	//overlays
-	rosamund_inv_sprite = App::CreateSprite(".\\TestData\\rosamund_portrait.png", 1, 1);
+	rosamund_inv_sprite = App::CreateSprite(".\\TestData\\rosamund_portrait_2.png", 1, 1);
 	rosamund_inv_sprite->SetPosition(500.0f, 400.0f);
 	rosamund_inv_sprite->SetScale(0.6f);
+	alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
+	alertIcon->SetScale(0.1f);
 
-	randy_inv_sprite = App::CreateSprite(".\\TestData\\randy_portrait.png", 1, 1);
+	randy_inv_sprite = App::CreateSprite(".\\TestData\\randy_portrait_2.png", 1, 1);
 	randy_inv_sprite->SetPosition(500.0f, 400.0f);
 	randy_inv_sprite->SetScale(0.6f);
+
+	granny_inv_sprite = App::CreateSprite(".\\TestData\\granny_portrait.png", 1, 1);
+	granny_inv_sprite->SetPosition(500.0f, 400.0f);
+	granny_inv_sprite->SetScale(0.6f);
 
 	// inventory slot items
 	// inventory items detailed view
@@ -245,6 +287,10 @@ void Init()
 	icon_letter_small->SetPosition(500.0f, 400.0f);
 	icon_letter_small->SetScale(0.6f);
 
+	icon_picture_small = App::CreateSprite(".\\TestData\\picture_icon.png", 1, 1);
+	icon_picture_small->SetPosition(500.0f, 400.0f);
+	icon_picture_small->SetScale(0.6f);
+
 	// inventory items detailed view
 	icon_gold = App::CreateSprite(".\\TestData\\gold_icon.png", 1, 1);
 	icon_gold->SetPosition(500.0f, 400.0f);
@@ -257,6 +303,10 @@ void Init()
 	icon_letter = App::CreateSprite(".\\TestData\\Letter_Icon.png", 1, 1);
 	icon_letter->SetPosition(500.0f, 400.0f);
 	icon_letter->SetScale(0.6f);
+
+	icon_picture = App::CreateSprite(".\\TestData\\picture.png", 1, 1);
+	icon_picture->SetPosition(500.0f, 400.0f);
+	icon_picture->SetScale(0.6f);
 
 	// temporary cursor
 	ui_cursor = App::CreateSprite(".\\TestData\\mask_temp.png", 1, 1);
@@ -294,10 +344,16 @@ void Init()
 	granny = App::CreateSprite(".\\TestData\\granny_idle.png", 4, 1); // 4 frame sprite, 1 row
 	granny->SetPosition(695.0f, 340.0f);
 	granny->SetScale(0.16f);
-	granny->CreateAnimation(0, 0.4f, { 0,1,2,3 }); // idle anim
+	granny->CreateAnimation(0, 0.4f, { 0,1,2,3 }); // idle animf
 	granny->SetAnimation(0);
 
-	// still have to add granny inventory sprites / portrait
+	NPCData gran;
+	gran.sprite = granny;
+	gran.name = "Granny";
+	gran.lootTable = grannyLoot;
+	gran.difficulty = 8;
+	gran.isAlerted = false;
+	allNPCs.push_back(gran);
 
 	// randy
 	randy = App::CreateSprite(".\\TestData\\randy_idle.png", 4, 1); // 4 frame sprite, 1 row
@@ -671,6 +727,14 @@ void Render()
 		roamingNPC->Draw();
 	}
 
+	for (auto& npc : allNPCs)
+	{
+		if (npc.isAlerted)
+		{
+			DrawAlertIconAboveNPC(npc.sprite);
+		}
+	}
+
 	// pickpocket dialogue panel
 	if (inPickpocketUI)
 	{
@@ -682,11 +746,16 @@ void Render()
 		else if (activeNPC == randy) {
 			randy_inv_sprite->Draw();
 		}
+		else if (activeNPC == granny) {
+			granny_inv_sprite->Draw();
+		}
 
 		// which table
+		// should improve this system
 		int* currentTable = nullptr;
 		if (activeNPC == rosamund) currentTable = rosamundLoot;
 		else if (activeNPC == randy) currentTable = randyLoot;
+		else if (activeNPC == granny) currentTable = grannyLoot;
 
 		if (currentTable != nullptr)
 		{
@@ -701,6 +770,9 @@ void Render()
 				}
 				else if (itemID == ITEM_LETTER) {
 					icon_letter_small->Draw();
+				}
+				else if (itemID == ITEM_PICTURE) {
+					icon_picture_small->Draw();
 				}
 			}
 		}
@@ -720,6 +792,9 @@ void Render()
 			}
 			else if (selectedItem == ITEM_LETTER) {
 				icon_letter->Draw();
+			}
+			else if (selectedItem == ITEM_PICTURE) {
+				icon_picture->Draw();
 			}
 		}
 
@@ -754,11 +829,6 @@ void Render()
 		App::Print(450, 400, "FAIL !", 1.0f, 0.0f, 0.0f);
 	}
 	}
-	NPCData* npcData = GetNPCDataFromSprite(activeNPC);
-	if (npcData && npcData->isAlerted)
-	{
-		App::Print(450, 400, "NPC is Alert", 1.0f, 0.0f, 0.0f);
-	}
 }
 
 void Shutdown()
@@ -789,4 +859,5 @@ void Shutdown()
 	delete icon_flashdrive_small;
 	delete icon_letter_small;
 	delete ui_cursor;
+	delete alertIcon;
 }
