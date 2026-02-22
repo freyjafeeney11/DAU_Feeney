@@ -1,112 +1,85 @@
 #include "stdafx.h"
-//------------------------------------------------------------------------
 #include <windows.h> 
 #include <math.h>  
-//------------------------------------------------------------------------
 #include "app\app.h"
 #include <string>
 #include <ctime>
-//------------------------------------------------------------------------
 #include "CrowdManager.h"
 #include "Player.h"
+#include "NPC.h"
 
-// starting camera stuff
 struct Camera {
 	float x = 0.0f;
 	float y = 0.0f;
 	float targetX = 0.0f;
-	float width = 1024.0f; // window width
+	float width = 1024.0f;
 } g_camera;
 
 CrowdManager* myCrowdManager;
 Player* myPlayer;
 
-// INVENTORY STUFF
 CSimpleSprite* inventory_screen;
 CSimpleSprite* window;
 CSimpleSprite* rain;
-// overlays
 CSimpleSprite* rosamund_inv_sprite;
 CSimpleSprite* randy_inv_sprite;
 CSimpleSprite* granny_inv_sprite;
 CSimpleSprite* alertIcon;
 
-// navigation
 CSimpleSprite* icon_gold;
 CSimpleSprite* icon_letter;
 CSimpleSprite* icon_flashdrive;
 CSimpleSprite* icon_picture;
 
-// smaller icons
 CSimpleSprite* icon_gold_small;
 CSimpleSprite* icon_letter_small;
 CSimpleSprite* icon_flashdrive_small;
 CSimpleSprite* icon_picture_small;
 
-
 CSimpleSprite* ui_cursor;
 int currentSlot = 0;
 bool navButtonDown = false;
 
-// inventory 
 struct Item {
 	int id;
 	std::string name;
 	std::string flavorText;
 	int value;
 };
-// npc struct
 
-struct NPCData {
-	CSimpleSprite* sprite;
-	std::string name;
-	int* lootTable;
-	bool isAlerted = false;
-	int difficulty;
-};
-
-// list of Npcs
-std::vector<NPCData> allNPCs;
-
-// players actual inventory
 std::vector<Item> playerInventory;
 
-// items available
-enum { ITEM_NONE, ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_LETTER, ITEM_PICTURE};
+enum { ITEM_NONE, ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_LETTER, ITEM_PICTURE };
 
-// loot tables
+std::vector<NPC*> allNPCs;
+NPC* activeNPC = nullptr;
+
 int rosamundLoot[6] = { ITEM_GOLD, ITEM_LETTER, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 int grannyLoot[6] = { ITEM_GOLD, ITEM_PICTURE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 int randyLoot[6] = { ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 
-// coords
 float slotCoords[6][2] = {
 	{ 190.0f, 600.0f },
 	{ 310.0f, 600.0f },
 	{ 450.0f, 600.0f },
 	{ 190.0f, 450.0f },
 	{ 310.0f, 450.0f },
-	{ 450.0f, 450.0f } 
+	{ 450.0f, 450.0f }
 };
 
-// metro bg
 CSimpleSprite* background;
-CSimpleSprite* rosamund;
 CSimpleSprite* generic;
-CSimpleSprite* granny;
-CSimpleSprite* randy;
 
+NPC* rosamund;
+NPC* granny;
+NPC* randy;
 
-// pickpocket stuff (steal mech)
 int lastDiceRoll = 0;
 bool showDiceResult = false;
 bool enterButtonDown = false;
 bool lastStealSuccess = false;
 bool pickpocketRolled = false;
 bool canRob = true;
-// ------------------------------
-
-// moving npc
 
 CSimpleSprite* roamingNPC = nullptr;
 
@@ -116,19 +89,12 @@ float npcSpawnDelay = 3.0f;
 float npcSpeed = 2.5f;
 bool npcMoveRight = true;
 
-// pickpocket globals
 CSimpleSprite* npcPortrait;
 bool npcPickpocketable = true;
 bool inPickpocketUI = false;
 bool pickpocketSuccess = false;
 
-// NEW COLLISION GLOBALS
-std::vector<CSimpleSprite*> npcList;
-CSimpleSprite* activeNPC = nullptr;
-// -----------------------------
 
-
-//------------------------------------------------------------------------'helper functions
 void DrawInWorld(CSimpleSprite* sprite) {
 	if (!sprite) return;
 
@@ -141,26 +107,14 @@ void DrawInWorld(CSimpleSprite* sprite) {
 	sprite->SetPosition(actualX, actualY);
 }
 
-NPCData* GetNPCDataFromSprite(CSimpleSprite* sprite)
-{
-	for (auto& npc : allNPCs)
-	{
-		if (npc.sprite == sprite)
-			return &npc;
-	}
-	return nullptr;
-}
-
-void DrawAlertIconAboveNPC(CSimpleSprite* npc)
+void DrawAlertIconAboveNPC(NPC* npc)
 {
 	if (!npc || !alertIcon) return;
 
 	float x, y;
 	npc->GetPosition(x, y);
-
 	float height = npc->GetHeight();
 	float scale = npc->GetScale();
-
 	float worldHeight = height * scale;
 
 	static float t = 0.0f;
@@ -169,14 +123,12 @@ void DrawAlertIconAboveNPC(CSimpleSprite* npc)
 	float bob = sinf(t) * 4.0f;
 
 	alertIcon->SetPosition(
-		x,
+		x - g_camera.x,
 		y + (worldHeight * 0.5f) + 10.0f + bob
 	);
 
 	alertIcon->Draw();
 }
-
-
 
 
 Item GetItemFromLibrary(int itemId) {
@@ -193,18 +145,14 @@ Item GetItemFromLibrary(int itemId) {
 		return { ITEM_NONE, "Empty Slot", "Put something here..", 0 };
 	}
 }
-
 bool IsPlayerNearNPC()
 {
 	float px, py, nx, ny;
 	myPlayer->GetPosition(px, py);
-
 	activeNPC = nullptr;
-
 	float playerRadius = 20.0f;
-	float npcRadius = 100.0f; // might need to be 100
-
-	for (CSimpleSprite* npc : npcList)
+	float npcRadius = 100.0f;
+	for (NPC* npc : allNPCs)
 	{
 		npc->GetPosition(nx, ny);
 		float dx = px - nx;
@@ -217,7 +165,6 @@ bool IsPlayerNearNPC()
 			return true;
 		}
 	}
-
 	return false;
 }
 
@@ -225,33 +172,26 @@ void Init()
 {
 	srand((unsigned int)time(nullptr));
 
-	// make npc pickpocketable
-	npcPickpocketable = true;
-	// background
 	background = App::CreateSprite(".\\TestData\\Train_bg.png", 1, 1);
 	background->SetPosition(500.0f, 400.0f);
 	background->SetScale(0.6f);
 
-	// windows
 	window = App::CreateSprite(".\\TestData\\cityscape.png", 7, 1);
 	window->SetPosition(470.0f, 450.0f);
 	window->SetScale(0.6f);
 	window->CreateAnimation(0, 0.5f, { 0, 1, 2, 3, 4, 5, 6 });
 	window->SetAnimation(0);
 
-	// rain
 	rain = App::CreateSprite(".\\TestData\\rain.png", 3, 1);
 	rain->SetPosition(475.0f, 450.0f);
 	rain->SetScale(0.5f);
 	rain->CreateAnimation(0, 0.2f, { 0, 1, 2 });
 	rain->SetAnimation(0);
 
-	//inventory
 	inventory_screen = App::CreateSprite(".\\TestData\\Inventory.png", 1, 1);
 	inventory_screen->SetPosition(500.0f, 400.0f);
 	inventory_screen->SetScale(0.6f);
 
-	//overlays
 	rosamund_inv_sprite = App::CreateSprite(".\\TestData\\rosamund_portrait_2.png", 1, 1);
 	rosamund_inv_sprite->SetPosition(500.0f, 400.0f);
 	rosamund_inv_sprite->SetScale(0.6f);
@@ -266,8 +206,6 @@ void Init()
 	granny_inv_sprite->SetPosition(500.0f, 400.0f);
 	granny_inv_sprite->SetScale(0.6f);
 
-	// inventory slot items
-	// inventory items detailed view
 	icon_gold_small = App::CreateSprite(".\\TestData\\gold_icon_small.png", 1, 1);
 	icon_gold_small->SetPosition(500.0f, 400.0f);
 	icon_gold_small->SetScale(0.6f);
@@ -284,7 +222,6 @@ void Init()
 	icon_picture_small->SetPosition(500.0f, 400.0f);
 	icon_picture_small->SetScale(0.6f);
 
-	// inventory items detailed view
 	icon_gold = App::CreateSprite(".\\TestData\\gold_icon.png", 1, 1);
 	icon_gold->SetPosition(500.0f, 400.0f);
 	icon_gold->SetScale(0.6f);
@@ -301,79 +238,32 @@ void Init()
 	icon_picture->SetPosition(500.0f, 400.0f);
 	icon_picture->SetScale(0.6f);
 
-	// temporary cursor
 	ui_cursor = App::CreateSprite(".\\TestData\\mask_temp.png", 1, 1);
 	ui_cursor->SetScale(0.4f);
 
-	// pickpocket dialogue panel
 	npcPortrait = App::CreateSprite(".\\TestData\\pickpocket_dialogue.png", 1, 1);
 	npcPortrait->SetPosition(500.0f, 400.0f);
 	npcPortrait->SetScale(0.6f);
 
-	// moving npc
 	roamingNPC = App::CreateSprite(".\\TestData\\npc_walk.png", 4, 1);
 	roamingNPC->SetScale(0.2f);
 	roamingNPC->CreateAnimation(0, 0.2f, { 0,1,2,3 });
 	roamingNPC->SetAnimation(0);
 
-	// start off screen
 	roamingNPC->SetPosition(-200.0f, -200.0f);
 
-	// generic
-	generic = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1); // 4 frame sprite, 1 row
+	generic = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1);
 	generic->SetPosition(600.0f, 340.0f);
 	generic->SetScale(0.5f);
 
-	rosamund = App::CreateSprite(".\\TestData\\rosamund_idle.png", 4, 1); // 4 frame sprite, 1 row
-	rosamund->SetPosition(590.0f, 360.0f);
-	rosamund->SetScale(0.2f);
-	rosamund->CreateAnimation(0, 0.4f, { 0,1,2,3 }); // idle anim
-	rosamund->SetAnimation(0);
+	rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 590.0f, 360.0f, 0.2f);
+	granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 710.0f, 300.0f, 0.14f);
+	randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 350.0f, 340.0f, 0.2f);
 
-	NPCData ros;
-	ros.sprite = rosamund;
-	ros.name = "Rosamund";
-	ros.lootTable = rosamundLoot;
-	ros.difficulty = 11;
-	allNPCs.push_back(ros);
+	allNPCs.push_back(rosamund);
+	allNPCs.push_back(granny);
+	allNPCs.push_back(randy);
 
-	// granny
-	granny = App::CreateSprite(".\\TestData\\granny_idle.png", 4, 1); // 4 frame sprite, 1 row
-	granny->SetPosition(710.0f, 300.0f);
-	granny->SetScale(0.14f);
-	granny->CreateAnimation(0, 0.4f, { 0,1,2,3 }); // idle animf
-	granny->SetAnimation(0);
-
-	NPCData gran;
-	gran.sprite = granny;
-	gran.name = "Granny";
-	gran.lootTable = grannyLoot;
-	gran.difficulty = 8;
-	gran.isAlerted = false;
-	allNPCs.push_back(gran);
-
-	// randy
-	randy = App::CreateSprite(".\\TestData\\randy_idle.png", 4, 1); // 4 frame sprite, 1 row
-	randy->SetPosition(350.0f, 340.0f);
-	randy->SetScale(0.2f);
-	randy->CreateAnimation(0, 0.4f, { 0,1,2,3 }); // idle anim coming soon
-	randy->SetAnimation(0);
-
-	NPCData ran;
-	ran.sprite = randy;
-	ran.name = "Randy";
-	ran.lootTable = randyLoot;
-	ran.difficulty = 14;
-	ran.isAlerted = false;
-	allNPCs.push_back(ran);
-
-
-	// adding npcs to collision list
-	npcList.push_back(rosamund);
-	npcList.push_back(randy);
-	npcList.push_back(granny);
-
-	// CREATE CROWD
 	myCrowdManager = new CrowdManager();
 
 	myPlayer = new Player();
@@ -381,15 +271,11 @@ void Init()
 
 void Update(float deltaTime)
 {
-	//------------------------------------------------------------------------
-	
-	// close pickpocket UI with ESC
 	if (inPickpocketUI && App::IsKeyPressed(VK_CONTROL))
 	{
 		inPickpocketUI = false;
 	}
 
-	// camera
 	float px, py;
 	myPlayer->GetPosition(px, py);
 	g_camera.x = px - 512.0f;
@@ -398,19 +284,17 @@ void Update(float deltaTime)
 	{
 		g_camera.x = 0;
 	}
-	// moving npc
+
 	npcTimer += deltaTime / 1000.0f;
 
 	if (!npcActive)
 	{
-		// wait then spawn
 		if (npcTimer >= npcSpawnDelay)
 		{
 
 			npcTimer = 0.0f;
 			npcActive = true;
 
-			// random direction
 			npcMoveRight = (rand() % 2) == 0;
 
 			float startX = npcMoveRight ? -100.0f : 1100.0f;
@@ -423,7 +307,6 @@ void Update(float deltaTime)
 	}
 	else
 	{
-		// move across screen
 		float x, y;
 		roamingNPC->GetPosition(x, y);
 
@@ -431,7 +314,6 @@ void Update(float deltaTime)
 		roamingNPC->SetPosition(x, y);
 		roamingNPC->SetFlipX(!npcMoveRight);
 
-		// despawn when off screen
 		if (x > 1200.0f || x < -200.0f)
 		{
 			npcActive = false;
@@ -442,13 +324,9 @@ void Update(float deltaTime)
 		roamingNPC->Update(deltaTime);
 	}
 
-	//update crowd
 	myCrowdManager->Update(deltaTime);
-
-
 	myPlayer->Update(deltaTime);
 
-	// update npc
 	rosamund->Update(deltaTime);
 	randy->Update(deltaTime);
 	granny->Update(deltaTime);
@@ -456,20 +334,15 @@ void Update(float deltaTime)
 	rain->Update(deltaTime);
 	bool nearNPC = IsPlayerNearNPC();
 
-	// close inventory ui if not near anymore
 	if (!nearNPC && inPickpocketUI)
 	{
 		inPickpocketUI = false;
 		pickpocketRolled = false;
 	}
 
-	// pickpocket UI
 	if (nearNPC && npcPickpocketable && !inPickpocketUI)
 	{
-		NPCData* npcData = GetNPCDataFromSprite(activeNPC);
-
-		// dont let player steal from npcs
-		if (npcData && npcData->isAlerted)
+		if (activeNPC && activeNPC->GetIsAlerted())
 		{
 			App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
 		}
@@ -482,8 +355,7 @@ void Update(float deltaTime)
 			}
 		}
 	}
-	
-	// try adding in the nav 6 slot ver
+
 	if (inPickpocketUI)
 	{
 		if (!navButtonDown)
@@ -492,7 +364,6 @@ void Update(float deltaTime)
 				if (currentSlot == 0) currentSlot = 1;
 				else if (currentSlot == 1) currentSlot = 2;
 				else if (currentSlot == 2) currentSlot = 0;
-
 				else if (currentSlot == 3) currentSlot = 4;
 				else if (currentSlot == 4) currentSlot = 5;
 				else if (currentSlot == 5) currentSlot = 3;
@@ -501,8 +372,7 @@ void Update(float deltaTime)
 			if (App::IsKeyPressed(VK_LEFT)) {
 				if (currentSlot == 1) currentSlot = 0;
 				else if (currentSlot == 2) currentSlot = 1;
-				else if (currentSlot == 0) currentSlot = 2; 
-
+				else if (currentSlot == 0) currentSlot = 2;
 				else if (currentSlot == 4) currentSlot = 3;
 				else if (currentSlot == 5) currentSlot = 4;
 				else if (currentSlot == 3) currentSlot = 5;
@@ -527,16 +397,14 @@ void Update(float deltaTime)
 			navButtonDown = false;
 		}
 
-		// steal with enter
 		if (App::IsKeyPressed(VK_RETURN) && !enterButtonDown)
 		{
 			enterButtonDown = true;
 
-			NPCData* npcData = GetNPCDataFromSprite(activeNPC);
-			if (!npcData) return;
+			if (!activeNPC) return;
 
-			int* currentTable = npcData->lootTable;
-			int difficulty = npcData->difficulty;
+			int* currentTable = activeNPC->GetLootTable();
+			int difficulty = activeNPC->GetDifficulty();
 
 			if (currentTable[currentSlot] != ITEM_NONE)
 			{
@@ -554,8 +422,7 @@ void Update(float deltaTime)
 				{
 					lastStealSuccess = false;
 
-					// FAIL CONSEQUENCES
-					npcData->isAlerted = true;
+					activeNPC->SetAlerted(true);
 					inPickpocketUI = false;
 				}
 
@@ -564,16 +431,12 @@ void Update(float deltaTime)
 
 		}
 
-		// Reset enter button
 		if (!App::IsKeyPressed(VK_RETURN))
 		{
 			enterButtonDown = false;
 		}
 	}
 
-	//------------------------------------------------------------------------
-	// Sample Sound.
-	//------------------------------------------------------------------------
 	if (App::GetController().CheckButton(XINPUT_GAMEPAD_B, true))
 	{
 		App::PlaySound(".\\TestData\\Test.wav");
@@ -582,40 +445,33 @@ void Update(float deltaTime)
 
 void Render()
 {
-	// image widths of backgrounds
 	float bgWidth = 1075.0f;
 	float windowWidth = 1024.0f;
 
-	// repeating offset
 	float windowScrollX = fmodf(g_camera.x * 0.3f, windowWidth);
 	float bgScrollX = fmodf(g_camera.x, bgWidth);
 
-	// drawing windows
 	window->SetPosition(512.0f - windowScrollX, 450.0f);
 	window->Draw();
 	window->SetPosition(512.0f - windowScrollX + windowWidth, 450.0f);
 	window->Draw();
 
-	// drawing rain
 	rain->SetPosition(475.0f - windowScrollX, 450.0f);
 	rain->Draw();
 	rain->SetPosition(475.0f - windowScrollX + windowWidth, 450.0f);
 	rain->Draw();
 
-	// repeating train interior
 	background->SetPosition(500.0f - bgScrollX, 400.0f);
 	background->Draw();
 	background->SetPosition(500.0f - bgScrollX + bgWidth, 400.0f);
 	background->Draw();
 
-	//  WORLD OBJECTS 
 	bool colliding = (activeNPC != nullptr);
 	if (colliding && !inPickpocketUI) {
 		App::Print(10, 100, "Press Space to view inventory", 0.0f, 0.0f, 0.0f);
 	}
 
-	rosamund->SetColor(1.0f, 1.0f, 1.0f);
-	DrawInWorld(rosamund);
+	rosamund->Render(g_camera.x, g_camera.y);
 
 	if (App::IsKeyPressed('I'))
 	{
@@ -626,35 +482,25 @@ void Render()
 		}
 	}
 
-	// draw the crowds
 	myCrowdManager->Render(g_camera.x, g_camera.y);
-
 	myPlayer->Render(g_camera.x, g_camera.y);
 
-	DrawInWorld(granny);
-	DrawInWorld(randy);
+	granny->Render(g_camera.x, g_camera.y);
+	randy->Render(g_camera.x, g_camera.y);
 
 	if (npcActive)
 	{
 		DrawInWorld(roamingNPC);
 	}
 
-	for (auto& npc : allNPCs)
+	for (NPC* npc : allNPCs)
 	{
-		if (npc.isAlerted)
+		if (npc->GetIsAlerted())
 		{
-			float ax, ay;
-			npc.sprite->GetPosition(ax, ay);
-			float worldHeight = npc.sprite->GetHeight() * npc.sprite->GetScale();
-			static float t = 0.0f;
-			t += 0.05f;
-			float bob = sinf(t) * 4.0f;
-			alertIcon->SetPosition(ax - g_camera.x, ay + (worldHeight * 0.5f) + 10.0f + bob);
-			alertIcon->Draw();
+			DrawAlertIconAboveNPC(npc);
 		}
 	}
 
-	// UI OBJECTS
 	if (inPickpocketUI)
 	{
 		inventory_screen->Draw();
@@ -663,10 +509,7 @@ void Render()
 		else if (activeNPC == randy) randy_inv_sprite->Draw();
 		else if (activeNPC == granny) granny_inv_sprite->Draw();
 
-		int* currentTable = nullptr;
-		if (activeNPC == rosamund) currentTable = rosamundLoot;
-		else if (activeNPC == randy) currentTable = randyLoot;
-		else if (activeNPC == granny) currentTable = grannyLoot;
+		int* currentTable = activeNPC->GetLootTable();
 
 		if (currentTable != nullptr)
 		{
@@ -718,11 +561,12 @@ void Render()
 }
 
 void Shutdown()
-{	
+{
 	delete window;
 	delete rain;
 	delete rosamund;
 	delete granny;
+	delete randy;
 	delete background;
 	delete roamingNPC;
 	delete inventory_screen;
