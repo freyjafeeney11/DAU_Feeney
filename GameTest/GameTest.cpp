@@ -7,6 +7,7 @@
 #include <string>
 #include <ctime>
 //------------------------------------------------------------------------
+#include "CrowdManager.h"
 // starting camera stuff
 struct Camera {
 	float x = 0.0f;
@@ -15,6 +16,7 @@ struct Camera {
 	float width = 1024.0f; // window width
 } g_camera;
 
+CrowdManager* myCrowdManager;
 // INVENTORY STUFF
 CSimpleSprite* inventory_screen;
 CSimpleSprite* window;
@@ -92,9 +94,7 @@ CSimpleSprite* rosamund;
 CSimpleSprite* generic;
 CSimpleSprite* granny;
 CSimpleSprite* randy;
-// crowd clumps 
-const int NUM_CLUMPS = 2;
-const int MEMBERS_PER_CLUMP = 5;
+
 
 // pickpocket stuff (steal mech)
 int lastDiceRoll = 0;
@@ -136,24 +136,6 @@ enum
 	ANIM_STEAL,
 	ANIM_RUN
 };
-
-struct CrowdMember
-{
-	CSimpleSprite* sprite;
-	float offsetX;
-	float offsetY;
-	float personalSwayOffset;
-};
-
-struct CrowdClump
-{
-	float baseX;
-	float baseY;
-	float swayOffset;
-	CrowdMember members[MEMBERS_PER_CLUMP];
-};
-
-CrowdClump crowdClumps[NUM_CLUMPS];
 
 //------------------------------------------------------------------------'helper functions
 void DrawInWorld(CSimpleSprite* sprite) {
@@ -400,33 +382,8 @@ void Init()
 	npcList.push_back(randy);
 	npcList.push_back(granny);
 
-	// crowd clumps 
-
-	float baseX = 200.0f;
-	float spacing = 250.0f;
-
-	for (int i = 0; i < NUM_CLUMPS; i++)
-	{
-		crowdClumps[i].baseX = baseX + i * spacing;
-		crowdClumps[i].baseY = 330.0f;
-		crowdClumps[i].swayOffset = (rand() % 100) / 100.0f * 6.28f;
-
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
-		{
-			CrowdMember& m = crowdClumps[i].members[j];
-
-			m.sprite = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1);
-			m.sprite->SetScale(0.5f);
-
-			m.sprite->SetFlipX((rand() % 2) == 0);
-
-			// spread people inside the clump
-			m.offsetX = (rand() % 41) - 30;
-			m.offsetY = (rand() % 31) - 20;
-
-			m.personalSwayOffset = (rand() % 100) / 100.0f * 6.28f;
-		}
-	}
+	// CREATE CROWD
+	myCrowdManager = new CrowdManager();
 
 	player = App::CreateSprite(".\\TestData\\player_sprite.png", 3,5);
 	player->SetPosition(400.0f, 250.0f);
@@ -501,29 +458,9 @@ void Update(float deltaTime)
 
 		roamingNPC->Update(deltaTime);
 	}
-	// crowd clumps
-	static float swayTime = 0.0f;
-	swayTime += deltaTime / 1000.0f;
 
-	for (int i = 0; i < NUM_CLUMPS; i++)
-	{
-		CrowdClump& clump = crowdClumps[i];
-
-		float clumpSwayX = sinf(swayTime + clump.swayOffset) * 2.0f;
-
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
-		{
-			CrowdMember& m = clump.members[j];
-
-			float personalSway =
-				sinf(swayTime * 1.5f + m.personalSwayOffset) * 1.5f;
-
-			m.sprite->SetPosition(
-				clump.baseX + clumpSwayX + m.offsetX,
-				clump.baseY + personalSway + m.offsetY
-			);
-		}
-	}
+	//update crowd
+	myCrowdManager->Update(deltaTime);
 
 
 
@@ -737,23 +674,10 @@ void Render()
 		}
 	}
 
-	for (int i = 0; i < NUM_CLUMPS; i++) {
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++) {
-			if (crowdClumps[i].members[j].offsetY < 0) {
-				DrawInWorld(crowdClumps[i].members[j].sprite);
-			}
-		}
-	}
+	// draw the crowds
+	myCrowdManager->Render(g_camera.x, g_camera.y);
 
 	DrawInWorld(player);
-
-	for (int i = 0; i < NUM_CLUMPS; i++) {
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++) {
-			if (crowdClumps[i].members[j].offsetY >= 0) {
-				DrawInWorld(crowdClumps[i].members[j].sprite);
-			}
-		}
-	}
 
 	DrawInWorld(granny);
 	DrawInWorld(randy);
@@ -849,15 +773,6 @@ void Shutdown()
 	delete rosamund;
 	delete granny;
 	delete background;
-
-	for (int i = 0; i < NUM_CLUMPS; i++)
-	{
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
-		{
-			delete crowdClumps[i].members[j].sprite;
-		}
-	}
-
 	delete roamingNPC;
 	delete inventory_screen;
 	delete rosamund_inv_sprite;
@@ -870,4 +785,6 @@ void Shutdown()
 	delete icon_letter_small;
 	delete ui_cursor;
 	delete alertIcon;
+
+	delete myCrowdManager;
 }
