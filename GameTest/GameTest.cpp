@@ -8,6 +8,8 @@
 #include <ctime>
 //------------------------------------------------------------------------
 #include "CrowdManager.h"
+#include "Player.h"
+
 // starting camera stuff
 struct Camera {
 	float x = 0.0f;
@@ -17,6 +19,8 @@ struct Camera {
 } g_camera;
 
 CrowdManager* myCrowdManager;
+Player* myPlayer;
+
 // INVENTORY STUFF
 CSimpleSprite* inventory_screen;
 CSimpleSprite* window;
@@ -85,9 +89,6 @@ float slotCoords[6][2] = {
 	{ 450.0f, 450.0f } 
 };
 
-//-------------------
-
-CSimpleSprite *player;
 // metro bg
 CSimpleSprite* background;
 CSimpleSprite* rosamund;
@@ -103,8 +104,6 @@ bool enterButtonDown = false;
 bool lastStealSuccess = false;
 bool pickpocketRolled = false;
 bool canRob = true;
-const float WALK_SPEED = 2.0f;
-const float RUN_SPEED = 4.0f;
 // ------------------------------
 
 // moving npc
@@ -128,14 +127,6 @@ std::vector<CSimpleSprite*> npcList;
 CSimpleSprite* activeNPC = nullptr;
 // -----------------------------
 
-enum
-{
-	ANIM_IDLE,
-	ANIM_HIDE,
-	ANIM_WALK,
-	ANIM_STEAL,
-	ANIM_RUN
-};
 
 //------------------------------------------------------------------------'helper functions
 void DrawInWorld(CSimpleSprite* sprite) {
@@ -206,7 +197,7 @@ Item GetItemFromLibrary(int itemId) {
 bool IsPlayerNearNPC()
 {
 	float px, py, nx, ny;
-	player->GetPosition(px, py);
+	myPlayer->GetPosition(px, py);
 
 	activeNPC = nullptr;
 
@@ -385,15 +376,7 @@ void Init()
 	// CREATE CROWD
 	myCrowdManager = new CrowdManager();
 
-	player = App::CreateSprite(".\\TestData\\player_sprite.png", 3,5);
-	player->SetPosition(400.0f, 250.0f);
-	float speed = 1.0f / 7.0f;
-	player->CreateAnimation(ANIM_IDLE, speed, { 0,1,2 });
-	player->CreateAnimation(ANIM_WALK, speed, { 3, 4, 5 });
-	player->CreateAnimation(ANIM_HIDE, speed, { 9, 10, 11 });
-	player->CreateAnimation(ANIM_STEAL, speed, { 12, 13, 14 });
-	player->CreateAnimation(ANIM_RUN, speed, { 6, 7, 8 });
-	player->SetScale(0.15f);
+	myPlayer = new Player();
 }
 
 void Update(float deltaTime)
@@ -408,7 +391,7 @@ void Update(float deltaTime)
 
 	// camera
 	float px, py;
-	player->GetPosition(px, py);
+	myPlayer->GetPosition(px, py);
 	g_camera.x = px - 512.0f;
 
 	if (g_camera.x < 0)
@@ -463,41 +446,10 @@ void Update(float deltaTime)
 	myCrowdManager->Update(deltaTime);
 
 
+	myPlayer->Update(deltaTime);
 
-	if (App::GetController().GetLeftThumbStickX() > 0.5f)
-	{
-		bool sprinting = App::IsKeyPressed(VK_SHIFT);
-
-		player->SetAnimation(sprinting ? ANIM_RUN : ANIM_WALK);
-		player->SetFlipX(true);
-		float x, y;
-		player->GetPosition(x, y);
-		player->SetPosition(x + (sprinting ? RUN_SPEED : WALK_SPEED), y);
-	}
-	if (App::GetController().GetLeftThumbStickX() < -0.5f)
-	{
-		bool sprinting = App::IsKeyPressed(VK_SHIFT);
-
-		player->SetAnimation(sprinting ? ANIM_RUN : ANIM_WALK);
-		player->SetFlipX(false);
-		float x, y;
-		player->GetPosition(x, y);
-		player->SetPosition(x - (sprinting ? RUN_SPEED : WALK_SPEED), y);
-	}
-
-	// STEAL LOGIC
-    if (App::GetController().GetLeftThumbStickY() > 0.5f)
-    {
-		player->SetAnimation(ANIM_HIDE);
-    }
-	// HIDE LOGIC
-	if (App::GetController().GetLeftThumbStickY() < -0.5f)
-	{
-		player->SetAnimation(ANIM_STEAL);
-	}
 	// update npc
 	rosamund->Update(deltaTime);
-	player->Update(deltaTime);
 	randy->Update(deltaTime);
 	granny->Update(deltaTime);
 	window->Update(deltaTime);
@@ -677,7 +629,7 @@ void Render()
 	// draw the crowds
 	myCrowdManager->Render(g_camera.x, g_camera.y);
 
-	DrawInWorld(player);
+	myPlayer->Render(g_camera.x, g_camera.y);
 
 	DrawInWorld(granny);
 	DrawInWorld(randy);
@@ -767,7 +719,6 @@ void Render()
 
 void Shutdown()
 {	
-	delete player;
 	delete window;
 	delete rain;
 	delete rosamund;
@@ -787,4 +738,5 @@ void Shutdown()
 	delete alertIcon;
 
 	delete myCrowdManager;
+	delete myPlayer;
 }
