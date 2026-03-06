@@ -3,65 +3,59 @@
 #include "CrowdManager.h"
 #include <stdlib.h>
 
-CrowdManager::CrowdManager() {
-    swayTime = 0.0f;
-
-    float baseX = 300.0f;
-    float spacing = 120.0f;
-
-    for (int i = 0; i < NUM_CLUMPS; i++) {
-        crowdClumps[i].baseX = baseX + i * spacing;
-        crowdClumps[i].baseY = 350.0f;
-        crowdClumps[i].swayOffset = (rand() % 100) / 100.0f * 6.28f;
-
-        for (int j = 0; j < MEMBERS_PER_CLUMP; j++) {
-            CrowdMember& m = crowdClumps[i].members[j];
-
-            m.sprite = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1);
-            m.sprite->SetScale(0.35f);
-
-            // spread people inside the clump
-            m.offsetX = (float)((rand() % 41) - 20);   // -20 to +20
-            m.offsetY = (float)((rand() % 31) - 15);
-
-            m.personalSwayOffset = (rand() % 100) / 100.0f * 6.28f;
-        }
-    }
+float CrowdManager::GetRandomOffset(int amplitude) {
+    return (float)((rand() % (amplitude * 2 + 1)) - amplitude);
 }
 
-CrowdManager::~CrowdManager() {
-    for (int i = 0; i < NUM_CLUMPS; i++) {
-        for (int j = 0; j < MEMBERS_PER_CLUMP; j++) {
-            delete crowdClumps[i].members[j].sprite;
+CrowdManager::CrowdManager() : m_swayTime(0.0f) {
+    const float baseX = 300.0f;
+    const float spacing = 120.0f;
+
+    for (int i = 0; i < ms_NUM_CLUMPS; i++) {
+        m_crowdClumps[i].m_baseX = baseX + i * spacing;
+        m_crowdClumps[i].m_baseY = 350.0f;
+        m_crowdClumps[i].m_swayOffset = GetRandomOffset(100) / 100.0f * 6.28f;
+
+        for (int j = 0; j < ms_MEMBERS_PER_CLUMP; j++) {
+            CrowdMember& m = m_crowdClumps[i].m_members[j];
+
+            m.m_sprite = std::unique_ptr<CSimpleSprite>(App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1));
+            m.m_sprite->SetScale(0.35f);
+
+            m.m_offsetX = GetRandomOffset(20);
+            m.m_offsetY = GetRandomOffset(15);
+
+            m.m_personalSwayOffset = GetRandomOffset(100) / 100.0f * 6.28f;
         }
     }
 }
 
 void CrowdManager::Update(float deltaTime) {
-    swayTime += deltaTime / 1000.0f;
 
-    for (int i = 0; i < NUM_CLUMPS; i++) {
-        CrowdClump& clump = crowdClumps[i];
+    m_swayTime += deltaTime / 1000.0f; // deltaTime is in milliseconds, convert to seconds
 
-        float clumpSwayX = sinf(swayTime + clump.swayOffset) * 2.0f;
+    for (int i = 0; i < ms_NUM_CLUMPS; i++) {
+        CrowdClump& clump = m_crowdClumps[i];
 
-        for (int j = 0; j < MEMBERS_PER_CLUMP; j++) {
-            CrowdMember& m = clump.members[j];
+        float clumpSwayX = sinf(m_swayTime + clump.m_swayOffset) * 2.0f;
 
-            float personalSway = sinf(swayTime * 1.5f + m.personalSwayOffset) * 1.5f;
+        for (int j = 0; j < ms_MEMBERS_PER_CLUMP; j++) {
+            CrowdMember& m = clump.m_members[j];
 
-            m.sprite->SetPosition(
-                clump.baseX + clumpSwayX + m.offsetX,
-                clump.baseY + personalSway + m.offsetY
+            float personalSway = sinf(m_swayTime * 1.5f + m.m_personalSwayOffset) * 1.5f;
+
+            m.m_sprite->SetPosition(
+                clump.m_baseX + clumpSwayX + m.m_offsetX,
+                clump.m_baseY + personalSway + m.m_offsetY
             );
         }
     }
 }
 
 void CrowdManager::Render(float camX, float camY) {
-    for (int i = 0; i < NUM_CLUMPS; i++) {
-        for (int j = 0; j < MEMBERS_PER_CLUMP; j++) {
-            CSimpleSprite* sprite = crowdClumps[i].members[j].sprite;
+    for (int i = 0; i < ms_NUM_CLUMPS; i++) {
+        for (int j = 0; j < ms_MEMBERS_PER_CLUMP; j++) {
+            CSimpleSprite* sprite = m_crowdClumps[i].m_members[j].m_sprite.get();
             float actualX, actualY;
             sprite->GetPosition(actualX, actualY);
             sprite->SetPosition(actualX - camX, actualY - camY);

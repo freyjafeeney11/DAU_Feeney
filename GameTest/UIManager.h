@@ -4,6 +4,7 @@
 #include "NPC.h"
 #include <vector>
 #include <string>
+
 struct Item {
     int id;
     std::string name;
@@ -15,30 +16,30 @@ enum { ITEM_NONE, ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_LETTER, ITEM_PICTURE };
 
 class UIManager {
 private:
-    CSimpleSprite* inventory_screen;
-    CSimpleSprite* rosamund_inv_sprite;
-    CSimpleSprite* randy_inv_sprite;
-    CSimpleSprite* granny_inv_sprite;
-    CSimpleSprite* npcPortrait;
+    CSimpleSprite* m_inventory_screen;
+    CSimpleSprite* m_rosamund_inv_sprite;
+    CSimpleSprite* m_randy_inv_sprite;
+    CSimpleSprite* m_granny_inv_sprite;
+    CSimpleSprite* m_npcPortrait;
 
-    CSimpleSprite* icon_gold;
-    CSimpleSprite* icon_letter;
-    CSimpleSprite* icon_flashdrive;
-    CSimpleSprite* icon_picture;
-    CSimpleSprite* icon_gold_small;
-    CSimpleSprite* icon_letter_small;
-    CSimpleSprite* icon_flashdrive_small;
-    CSimpleSprite* icon_picture_small;
+    CSimpleSprite* m_icon_gold;
+    CSimpleSprite* m_icon_letter;
+    CSimpleSprite* m_icon_flashdrive;
+    CSimpleSprite* m_icon_picture;
+    CSimpleSprite* m_icon_gold_small;
+    CSimpleSprite* m_icon_letter_small;
+    CSimpleSprite* m_icon_flashdrive_small;
+    CSimpleSprite* m_icon_picture_small;
 
-    CSimpleSprite* ui_cursor;
-    int currentSlot;
-    bool navButtonDown;
-    bool enterButtonDown;
-    int lastDiceRoll;
-    bool showDiceResult;
-    bool lastStealSuccess;
+    CSimpleSprite* m_ui_cursor;
+    int m_currentSlot;
+    bool m_navButtonDown;
+    bool m_enterButtonDown;
+    int m_lastDiceRoll;
+    bool m_showDiceResult;
+    bool m_lastStealSuccess;
 
-    float slotCoords[6][2];
+    float m_slotCoords[6][2];
 
     Item GetItemFromLibrary(int itemId);
 

@@ -5,17 +5,17 @@
 
 class Level {
 private:
-    CSimpleSprite* background;
-    CSimpleSprite* window;
-    CSimpleSprite* rain;
-    CSimpleSprite* roamingNPC;
+    CSimpleSprite* m_background;
+    CSimpleSprite* m_window;
+    CSimpleSprite* m_rain;
+    CSimpleSprite* m_roamingNPC;
 
     // Roaming NPC variables
-    bool npcActive;
-    float npcTimer;
-    float npcSpawnDelay;
-    float npcSpeed;
-    bool npcMoveRight;
+    bool m_npcActive;
+    float m_npcTimer;
+    float m_npcSpawnDelay;
+    float m_npcSpeed;
+    bool m_npcMoveRight;
 
 public:
     Level();

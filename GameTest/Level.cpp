@@ -5,75 +5,75 @@
 
 Level::Level() {
     // Backgrounds
-    background = App::CreateSprite(".\\TestData\\Train_bg.png", 1, 1);
-    background->SetPosition(500.0f, 400.0f);
-    background->SetScale(0.6f);
+    m_background = App::CreateSprite(".\\TestData\\train_bg.png", 1, 1);
+    m_background->SetPosition(500.0f, 500.0f);
+    m_background->SetScale(0.6f);
 
-    window = App::CreateSprite(".\\TestData\\cityscape.png", 7, 1);
-    window->SetPosition(470.0f, 450.0f);
-    window->SetScale(0.6f);
-    window->CreateAnimation(0, 0.5f, { 0, 1, 2, 3, 4, 5, 6 });
-    window->SetAnimation(0);
+    m_window = App::CreateSprite(".\\TestData\\cityscape.png", 7, 1);
+    m_window->SetPosition(470.0f, 450.0f);
+    m_window->SetScale(0.6f);
+    m_window->CreateAnimation(0, 0.5f, { 0, 1, 2, 3, 4, 5, 6 });
+    m_window->SetAnimation(0);
 
-    rain = App::CreateSprite(".\\TestData\\rain.png", 3, 1);
-    rain->SetPosition(475.0f, 450.0f);
-    rain->SetScale(0.5f);
-    rain->CreateAnimation(0, 0.2f, { 0, 1, 2 });
-    rain->SetAnimation(0);
+    m_rain = App::CreateSprite(".\\TestData\\rain.png", 3, 1);
+    m_rain->SetPosition(475.0f, 450.0f);
+    m_rain->SetScale(0.5f);
+    m_rain->CreateAnimation(0, 0.2f, { 0, 1, 2 });
+    m_rain->SetAnimation(0);
 
     // Roaming NPC
-    roamingNPC = App::CreateSprite(".\\TestData\\npc_walk.png", 4, 1);
-    roamingNPC->SetScale(0.2f);
-    roamingNPC->CreateAnimation(0, 0.2f, { 0,1,2,3 });
-    roamingNPC->SetAnimation(0);
-    roamingNPC->SetPosition(-200.0f, -200.0f);
+    m_roamingNPC = App::CreateSprite(".\\TestData\\npc_walk.png", 4, 1);
+    m_roamingNPC->SetScale(0.2f);
+    m_roamingNPC->CreateAnimation(0, 0.2f, { 0,1,2,3 });
+    m_roamingNPC->SetAnimation(0);
+    m_roamingNPC->SetPosition(-200.0f, -200.0f);
 
-    npcActive = false;
-    npcTimer = 0.0f;
-    npcSpawnDelay = 3.0f;
-    npcSpeed = 2.5f;
-    npcMoveRight = true;
+    m_npcActive = false;
+    m_npcTimer = 0.0f;
+    m_npcSpawnDelay = 3.0f;
+    m_npcSpeed = 2.5f;
+    m_npcMoveRight = true;
 }
 
 Level::~Level() {
-    delete background;
-    delete window;
-    delete rain;
-    delete roamingNPC;
+    delete m_background;
+    delete m_window;
+    delete m_rain;
+    delete m_roamingNPC;
 }
 
 void Level::Update(float deltaTime) {
-    window->Update(deltaTime);
-    rain->Update(deltaTime);
+    m_window->Update(deltaTime);
+    m_rain->Update(deltaTime);
 
     // Roaming NPC Logic
-    npcTimer += deltaTime / 1000.0f;
+    m_npcTimer += deltaTime / 1000.0f;
 
-    if (!npcActive) {
-        if (npcTimer >= npcSpawnDelay) {
-            npcTimer = 0.0f;
-            npcActive = true;
-            npcMoveRight = (rand() % 2) == 0;
-            float startX = npcMoveRight ? -100.0f : 1100.0f;
+    if (!m_npcActive) {
+        if (m_npcTimer >= m_npcSpawnDelay) {
+            m_npcTimer = 0.0f;
+            m_npcActive = true;
+            m_npcMoveRight = (rand() % 2) == 0;
+            float startX = m_npcMoveRight ? -100.0f : 1100.0f;
             float startY = 280.0f;
-            roamingNPC->SetPosition(startX, startY);
-            roamingNPC->SetFlipX(npcMoveRight);
-            roamingNPC->SetAnimation(0);
+            m_roamingNPC->SetPosition(startX, startY);
+            m_roamingNPC->SetFlipX(m_npcMoveRight);
+            m_roamingNPC->SetAnimation(0);
         }
     }
     else {
         float x, y;
-        roamingNPC->GetPosition(x, y);
-        x += (npcMoveRight ? npcSpeed : -npcSpeed);
-        roamingNPC->SetPosition(x, y);
-        roamingNPC->SetFlipX(!npcMoveRight);
+        m_roamingNPC->GetPosition(x, y);
+        x += (m_npcMoveRight ? m_npcSpeed : -m_npcSpeed);
+        m_roamingNPC->SetPosition(x, y);
+        m_roamingNPC->SetFlipX(!m_npcMoveRight);
 
         if (x > 1200.0f || x < -200.0f) {
-            npcActive = false;
-            npcTimer = 0.0f;
-            roamingNPC->SetPosition(-200.0f, -200.0f);
+            m_npcActive = false;
+            m_npcTimer = 0.0f;
+            m_roamingNPC->SetPosition(-200.0f, -200.0f);
         }
-        roamingNPC->Update(deltaTime);
+        m_roamingNPC->Update(deltaTime);
     }
 }
 
@@ -84,28 +84,28 @@ void Level::RenderBackground(float camX) {
     float windowScrollX = fmodf(camX * 0.3f, windowWidth);
     float bgScrollX = fmodf(camX, bgWidth);
 
-    window->SetPosition(512.0f - windowScrollX, 450.0f);
-    window->Draw();
-    window->SetPosition(512.0f - windowScrollX + windowWidth, 450.0f);
-    window->Draw();
+    m_window->SetPosition(512.0f - windowScrollX, 450.0f);
+    m_window->Draw();
+    m_window->SetPosition(512.0f - windowScrollX + windowWidth, 450.0f);
+    m_window->Draw();
 
-    rain->SetPosition(475.0f - windowScrollX, 450.0f);
-    rain->Draw();
-    rain->SetPosition(475.0f - windowScrollX + windowWidth, 450.0f);
-    rain->Draw();
+    m_rain->SetPosition(475.0f - windowScrollX, 450.0f);
+    m_rain->Draw();
+    m_rain->SetPosition(475.0f - windowScrollX + windowWidth, 450.0f);
+    m_rain->Draw();
 
-    background->SetPosition(500.0f - bgScrollX, 400.0f);
-    background->Draw();
-    background->SetPosition(500.0f - bgScrollX + bgWidth, 400.0f);
-    background->Draw();
+    m_background->SetPosition(500.0f - bgScrollX, 400.0f);
+    m_background->Draw();
+    m_background->SetPosition(500.0f - bgScrollX + bgWidth, 400.0f);
+    m_background->Draw();
 }
 
 void Level::RenderForeground(float camX, float camY) {
-    if (npcActive) {
+    if (m_npcActive) {
         float actualX, actualY;
-        roamingNPC->GetPosition(actualX, actualY);
-        roamingNPC->SetPosition(actualX - camX, actualY - camY);
-        roamingNPC->Draw();
-        roamingNPC->SetPosition(actualX, actualY);
+        m_roamingNPC->GetPosition(actualX, actualY);
+        m_roamingNPC->SetPosition(actualX - camX, actualY - camY);
+        m_roamingNPC->Draw();
+        m_roamingNPC->SetPosition(actualX, actualY);
     }
 }

@@ -1,12 +1,13 @@
+// Player.h
 #pragma once
 #include "app\app.h"
 
 class Player {
 private:
-    CSimpleSprite* sprite;
+    CSimpleSprite* m_sprite;
 
-    const float WALK_SPEED = 3.0f;
-    const float RUN_SPEED = 5.0f;
+    static constexpr float ms_WALK_SPEED = 3.5f;
+    static constexpr float ms_RUN_SPEED = 7.0f;
 
     enum {
         ANIM_IDLE,

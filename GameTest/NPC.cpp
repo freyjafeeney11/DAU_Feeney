@@ -3,52 +3,53 @@
 #include "NPC.h"
 
 NPC::NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* npcLoot, float startX, float startY, float scale) {
-    name = npcName;
-    difficulty = npcDifficulty;
-    isAlerted = false;
-    // loot table
+    m_name = npcName;
+    m_difficulty = npcDifficulty;
+    m_isAlerted = false;
+
     for (int i = 0; i < 6; i++) {
-        lootTable[i] = npcLoot[i];
+        m_lootTable[i] = npcLoot[i];
     }
-    sprite = App::CreateSprite(spritePath, 4, 1);
-    sprite->SetPosition(startX, startY);
-    sprite->SetScale(scale);
-    sprite->CreateAnimation(0, 0.4f, { 0,1,2,3 });
-    sprite->SetAnimation(0);
+
+    m_sprite = App::CreateSprite(spritePath, 4, 1);
+    m_sprite->SetPosition(startX, startY);
+    m_sprite->SetScale(scale);
+    m_sprite->CreateAnimation(0, 0.4f, { 0,1,2,3 });
+    m_sprite->SetAnimation(0);
 }
 
 NPC::~NPC() {
-    delete sprite;
+    delete m_sprite;
 }
 
 void NPC::Update(float deltaTime) {
-    sprite->Update(deltaTime);
+    m_sprite->Update(deltaTime);
 }
 
 void NPC::Render(float camX, float camY) {
     float actualX, actualY;
-    sprite->GetPosition(actualX, actualY);
+    m_sprite->GetPosition(actualX, actualY);
 
-    sprite->SetPosition(actualX - camX, actualY - camY);
-    sprite->Draw();
+    m_sprite->SetPosition(actualX - camX, actualY - camY);
+    m_sprite->Draw();
 
-    sprite->SetPosition(actualX, actualY);
+    m_sprite->SetPosition(actualX, actualY);
 }
 
 void NPC::GetPosition(float& x, float& y) {
-    sprite->GetPosition(x, y);
+    m_sprite->GetPosition(x, y);
 }
 
 float NPC::GetHeight() {
-    return sprite->GetHeight();
+    return m_sprite->GetHeight();
 }
 
 float NPC::GetScale() {
-    return sprite->GetScale();
+    return m_sprite->GetScale();
 }
 
-std::string NPC::GetName() { return name; }
-int NPC::GetDifficulty() { return difficulty; }
-int* NPC::GetLootTable() { return lootTable; }
-bool NPC::GetIsAlerted() { return isAlerted; }
-void NPC::SetAlerted(bool alerted) { isAlerted = alerted; }
+std::string NPC::GetName() { return m_name; }
+int NPC::GetDifficulty() { return m_difficulty; }
+int* NPC::GetLootTable() { return m_lootTable; }
+bool NPC::GetIsAlerted() { return m_isAlerted; }
+void NPC::SetAlerted(bool alerted) { m_isAlerted = alerted; }
