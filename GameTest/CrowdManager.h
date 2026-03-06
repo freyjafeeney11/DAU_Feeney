@@ -6,8 +6,8 @@
 
 class CrowdManager {
 private:
-    static const int ms_NUM_CLUMPS = 3;
-    static const int ms_MEMBERS_PER_CLUMP = 5;
+    static const int ms_NUM_CLUMPS = 4;
+    static const int ms_MEMBERS_PER_CLUMP = 6;
     static float GetRandomOffset(int amplitude);
 
     struct CrowdMember {
@@ -30,7 +30,8 @@ private:
 public:
     CrowdManager();
     ~CrowdManager() = default;
-
+    
+    bool IsPlayerInClump(float playerX, float playerY);
     void Update(float deltaTime);
     void Render(float camX, float camY);
 };

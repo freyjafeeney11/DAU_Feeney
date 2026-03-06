@@ -10,6 +10,7 @@
 #include "NPC.h"
 #include "UIManager.h"
 #include "Level.h"
+#include "Patroller.h"
 
 struct Camera {
 	float x = 0.0f;
@@ -18,6 +19,7 @@ struct Camera {
 	float width = 1024.0f;
 } g_camera;
 
+Patroller* myPatroller;
 CrowdManager* myCrowdManager;
 Player* myPlayer;
 UIManager* myUI;
@@ -73,14 +75,15 @@ bool IsPlayerNearNPC() {
 }
 
 void Init() {
+	myPatroller = new Patroller();
 	srand((unsigned int)time(nullptr));
 
 	alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
 	alertIcon->SetScale(0.1f);
 
-	rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 590.0f, 360.0f, 0.2f);
-	granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 710.0f, 300.0f, 0.14f);
-	randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 350.0f, 340.0f, 0.2f);
+	rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 600.0f, 360.0f, 0.2f); // ypos, xpos, size
+	granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1220.0f, 320.0f, 0.15f);
+	randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 250.0f, 340.0f, 0.2f);
 
 	allNPCs.push_back(rosamund);
 	allNPCs.push_back(granny);
@@ -93,6 +96,10 @@ void Init() {
 }
 
 void Update(float deltaTime) {
+	if (myPatroller->IsPlayerCaught()) {
+		// game is frozen
+		return;
+	}
 	float px, py;
 	myPlayer->GetPosition(px, py);
 	g_camera.x = px - 512.0f;
@@ -100,6 +107,8 @@ void Update(float deltaTime) {
 	if (g_camera.x < 0) {
 		g_camera.x = 0;
 	}
+	bool playerInClump = myCrowdManager->IsPlayerInClump(px, py);
+	myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
 
 	myLevel->Update(deltaTime);
 	myCrowdManager->Update(deltaTime);
@@ -114,6 +123,9 @@ void Update(float deltaTime) {
 	if (nearNPC && !myUI->inPickpocketUI) {
 		if (activeNPC && activeNPC->GetIsAlerted()) {
 			App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
+			if (myPatroller->IsInactive()) {  // only activate if not already running
+				myPatroller->Activate();
+			}
 		}
 		else {
 			if (App::IsKeyPressed(VK_SPACE)) {
@@ -136,11 +148,10 @@ void Render() {
 	if (colliding && !myUI->inPickpocketUI) {
 		App::Print(10, 100, "Press Space to view inventory", 0.0f, 0.0f, 0.0f);
 	}
-
-	rosamund->Render(g_camera.x, g_camera.y);
 	myCrowdManager->Render(g_camera.x, g_camera.y);
-	myPlayer->Render(g_camera.x, g_camera.y);
+	rosamund->Render(g_camera.x, g_camera.y);
 	granny->Render(g_camera.x, g_camera.y);
+	myPlayer->Render(g_camera.x, g_camera.y);
 	randy->Render(g_camera.x, g_camera.y);
 
 	for (NPC* npc : allNPCs) {
@@ -150,6 +161,11 @@ void Render() {
 	}
 
 	myLevel->RenderForeground(g_camera.x, g_camera.y);
+	myPatroller->Render(g_camera.x, g_camera.y);
+	if (myPatroller->IsPlayerCaught()) {
+		App::Print(350, 400, "You got caught!", 1.0f, 0.0f, 0.0f);
+		App::Print(300, 350, "Close the window to restart.", 1.0f, 1.0f, 1.0f);
+	}
 	myUI->Render(activeNPC, playerInventory);
 }
 
@@ -163,4 +179,5 @@ void Shutdown() {
 	delete myPlayer;
 	delete myUI;
 	delete myLevel;
+	delete myPatroller;
 }
