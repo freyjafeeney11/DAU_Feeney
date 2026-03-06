@@ -39,17 +39,3 @@ void NPC::Render(float camX, float camY) {
 void NPC::GetPosition(float& x, float& y) {
     m_sprite->GetPosition(x, y);
 }
-
-float NPC::GetHeight() {
-    return m_sprite->GetHeight();
-}
-
-float NPC::GetScale() {
-    return m_sprite->GetScale();
-}
-
-std::string NPC::GetName() { return m_name; }
-int NPC::GetDifficulty() { return m_difficulty; }
-int* NPC::GetLootTable() { return m_lootTable; }
-bool NPC::GetIsAlerted() { return m_isAlerted; }
-void NPC::SetAlerted(bool alerted) { m_isAlerted = alerted; }
