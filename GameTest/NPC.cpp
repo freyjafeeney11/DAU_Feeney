@@ -14,7 +14,7 @@ NPC::NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* np
     m_sprite = App::CreateSprite(spritePath, 4, 1);
     m_sprite->SetPosition(startX, startY);
     m_sprite->SetScale(scale);
-    m_sprite->CreateAnimation(0, 0.4f, { 0,1,2,3 });
+    m_sprite->CreateAnimation(0, 0.4f, { 0,1,2,3,4 });
     m_sprite->SetAnimation(0);
 }
 

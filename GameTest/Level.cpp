@@ -5,6 +5,10 @@
 
 Level::Level() {
     // Backgrounds
+    m_city = App::CreateSprite(".\\TestData\\city.png", 1, 1);
+    m_city->SetPosition(512.0f, 450.0f);
+    m_city->SetScale(0.6f);
+
     m_background = App::CreateSprite(".\\TestData\\train_bg.png", 1, 1);
     m_background->SetPosition(500.0f, 500.0f);
     m_background->SetScale(0.6f);
@@ -22,9 +26,9 @@ Level::Level() {
     m_rain->SetAnimation(0);
 
     // Roaming NPC
-    m_roamingNPC = App::CreateSprite(".\\TestData\\npc_walk.png", 4, 1);
+    m_roamingNPC = App::CreateSprite(".\\TestData\\npc_walk.png", 5, 1);
     m_roamingNPC->SetScale(0.2f);
-    m_roamingNPC->CreateAnimation(0, 0.2f, { 0,1,2,3 });
+    m_roamingNPC->CreateAnimation(0, 0.3f, { 0,1,2,3, 4 });
     m_roamingNPC->SetAnimation(0);
     m_roamingNPC->SetPosition(-200.0f, -200.0f);
 
@@ -40,6 +44,7 @@ Level::~Level() {
     delete m_window;
     delete m_rain;
     delete m_roamingNPC;
+    delete m_city;
 }
 
 void Level::Update(float deltaTime) {
@@ -84,10 +89,16 @@ void Level::RenderBackground(float camX) {
     float windowScrollX = fmodf(camX * 0.3f, windowWidth);
     float bgScrollX = fmodf(camX, bgWidth);
 
-    m_window->SetPosition(512.0f - windowScrollX, 450.0f);
-    m_window->Draw();
-    m_window->SetPosition(512.0f - windowScrollX + windowWidth, 450.0f);
-    m_window->Draw();
+   // m_window->SetPosition(512.0f - windowScrollX, 450.0f);
+   // m_window->Draw();
+   // m_window->SetPosition(512.0f - windowScrollX + windowWidth, 450.0f);
+   // m_window->Draw();
+
+    float cityScrollX = fmodf(camX * 0.5f, 1024.0f); // 0.5f for parallax speed
+    m_city->SetPosition(512.0f - cityScrollX, 450.0f);
+    m_city->Draw();
+    m_city->SetPosition(512.0f - cityScrollX + 1024.0f, 450.0f);
+    m_city->Draw();
 
     m_rain->SetPosition(475.0f - windowScrollX, 450.0f);
     m_rain->Draw();

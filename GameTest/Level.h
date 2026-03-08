@@ -6,6 +6,7 @@
 class Level {
 private:
     CSimpleSprite* m_background;
+    CSimpleSprite* m_city;
     CSimpleSprite* m_window;
     CSimpleSprite* m_rain;
     CSimpleSprite* m_roamingNPC;
