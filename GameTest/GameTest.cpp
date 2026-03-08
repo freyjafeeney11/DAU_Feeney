@@ -1,428 +1,189 @@
-//------------------------------------------------------------------------
-// GameTest.cpp
-//------------------------------------------------------------------------
 #include "stdafx.h"
-//------------------------------------------------------------------------
 #include <windows.h> 
 #include <math.h>  
-//------------------------------------------------------------------------
 #include "app\app.h"
-//------------------------------------------------------------------------
+#include <string>
+#include <ctime>
+#include <vector>
+#include "CrowdManager.h"
+#include "Player.h"
+#include "NPC.h"
+#include "UIManager.h"
+#include "Level.h"
+#include "Patroller.h"
+#include "App\SimpleSound.h"
 
-//------------------------------------------------------------------------
-// Eample data....
-//------------------------------------------------------------------------
-CSimpleSprite *player;
-// metro bg
-CSimpleSprite* background;
-CSimpleSprite* npc;        // NPC
-// crowd clumps 
-const int NUM_CLUMPS = 3;
-const int MEMBERS_PER_CLUMP = 5;
+struct Camera {
+	float x = 0.0f;
+	float y = 0.0f;
+	float targetX = 0.0f;
+	float width = 1024.0f;
+} g_camera;
 
-bool pickpocketRolled = false;
+Patroller* myPatroller;
+CrowdManager* myCrowdManager;
+Player* myPlayer;
+UIManager* myUI;
+Level* myLevel;
 
-bool canRob = true;  // can npc be pickpocketed
-const float WALK_SPEED = 2.0f;
-const float RUN_SPEED = 4.0f;
+CSimpleSprite* alertIcon;
 
-// moving npc
+std::vector<Item> playerInventory;
+std::vector<NPC*> allNPCs;
+NPC* activeNPC = nullptr;
 
-CSimpleSprite* roamingNPC = nullptr;
+int rosamundLoot[6] = { ITEM_GOLD, ITEM_LETTER, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+int grannyLoot[6] = { ITEM_GOLD, ITEM_PICTURE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+int randyLoot[6] = { ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 
-bool npcActive = false;
-float npcTimer = 0.0f;
-float npcSpawnDelay = 3.0f;   // seconds between appearances
-float npcSpeed = 2.5f;
-bool npcMoveRight = true;
+NPC* rosamund;
+NPC* granny;
+NPC* randy;
 
-// pickpocket globals
-CSimpleSprite* npcPortrait;
-bool npcPickpocketable = true;
-bool inPickpocketUI = false;
-bool pickpocketSuccess = false;
+void DrawAlertIconAboveNPC(NPC* npc) {
+	if (!npc || !alertIcon) return;
+	float x, y;
+	npc->GetPosition(x, y);
+	float height = npc->GetHeight();
+	float scale = npc->GetScale();
+	float worldHeight = height * scale;
 
+	static float t = 0.0f;
+	t += 0.05f;
+	float bob = sinf(t) * 4.0f;
 
+	alertIcon->SetPosition(x - g_camera.x, y + (worldHeight * 0.5f) + 10.0f + bob);
+	alertIcon->Draw();
+}
 
-enum
-{
-	ANIM_IDLE,
-	ANIM_HIDE,
-	ANIM_WALK,
-	ANIM_STEAL,
-	ANIM_RUN
-};
-
-struct CrowdMember
-{
-	CSimpleSprite* sprite;
-	float offsetX;
-	float offsetY;
-	float personalSwayOffset;
-};
-
-struct CrowdClump
-{
-	float baseX;
-	float baseY;
-	float swayOffset;
-	CrowdMember members[MEMBERS_PER_CLUMP];
-};
-
-CrowdClump crowdClumps[NUM_CLUMPS];
-
-//------------------------------------------------------------------------
-bool IsPlayerNearNPC()
-{
+bool IsPlayerNearNPC() {
 	float px, py, nx, ny;
-	player->GetPosition(px, py);
-	npc->GetPosition(nx, ny);
-
+	myPlayer->GetPosition(px, py);
+	activeNPC = nullptr;
 	float playerRadius = 20.0f;
 	float npcRadius = 100.0f;
-
-	float dx = px - nx;
-	float dy = py - ny;
-	float distance = sqrtf(dx * dx + dy * dy);
-
-	return (distance < (playerRadius + npcRadius));
+	for (NPC* npc : allNPCs) {
+		npc->GetPosition(nx, ny);
+		float dx = px - nx;
+		float dy = py - ny;
+		float distance = sqrtf(dx * dx + dy * dy);
+		if (distance < (playerRadius + npcRadius)) {
+			activeNPC = npc;
+			return true;
+		}
+	}
+	return false;
 }
 
-//------------------------------------------------------------------------
-// Called before first update. Do any initial setup here.
-//------------------------------------------------------------------------
-void Init()
-{
-	// make npc pickpocketable
-	npcPickpocketable = true;
-	// background
-	background = App::CreateSprite(".\\TestData\\background2.png", 1, 1);
-	background->SetPosition(500.0f, 400.0f);
-	background->SetScale(0.6f);
-	// pickpocket dialogue panel
-	npcPortrait = App::CreateSprite(".\\TestData\\pickpocket_dialogue.png", 1, 1);
-	npcPortrait->SetPosition(500.0f, 400.0f);
-	npcPortrait->SetScale(0.6f);
+void Init() {
+	// audio .. but not working
+	//App::PlaySound(".\\TestData\\jazz.wav", DSBPLAY_LOOPING);
+	//App::PlaySound(".\\TestData\\rain.wav", true);
+	//App::PlaySound(".\\TestData\\train_sounds.wav", true);
 
-	//------------------------------------------------------------------------
-	// moving npc
-	roamingNPC = App::CreateSprite(".\\TestData\\npc_walk.png", 4, 1);
-	roamingNPC->SetScale(0.2f);
-	roamingNPC->CreateAnimation(0, 0.2f, { 0,1,2,3 });
-	roamingNPC->SetAnimation(0);
+	myPatroller = new Patroller();
+	srand((unsigned int)time(nullptr));
 
-	// start off screen
-	roamingNPC->SetPosition(-200.0f, -200.0f);
+	alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
+	alertIcon->SetScale(0.1f);
 
-	// npc
-	npc = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1); // 4 frame sprite, 1 row
-	npc->SetPosition(600.0f, 340.0f);
-	npc->SetScale(0.5f);
-	npc->CreateAnimation(0, 0.2f, { 0,1,2,3 }); // idle anim
-	npc->SetAnimation(0);
+	rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 600.0f, 360.0f, 0.2f); // ypos, xpos, size
+	granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1220.0f, 320.0f, 0.15f);
+	randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 250.0f, 340.0f, 0.2f);
 
-	// crowd clumps 
+	allNPCs.push_back(rosamund);
+	allNPCs.push_back(granny);
+	allNPCs.push_back(randy);
 
-	float baseX = 300.0f;
-	float spacing = 120.0f;
-
-	for (int i = 0; i < NUM_CLUMPS; i++)
-	{
-		crowdClumps[i].baseX = baseX + i * spacing;
-		crowdClumps[i].baseY = 350.0f;
-		crowdClumps[i].swayOffset = (rand() % 100) / 100.0f * 6.28f;
-
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
-		{
-			CrowdMember& m = crowdClumps[i].members[j];
-
-			m.sprite = App::CreateSprite(".\\TestData\\IMG_1297.png", 1, 1);
-			m.sprite->SetScale(0.35f);
-
-			// spread people inside the clump
-			m.offsetX = (rand() % 41) - 20;   // -20 to +20
-			m.offsetY = (rand() % 31) - 15;
-
-			m.personalSwayOffset = (rand() % 100) / 100.0f * 6.28f;
-		}
-	}
-
-
-
-	// Example Sprite Code....
-	player = App::CreateSprite(".\\TestData\\player_sprite.png", 3,5);
-	player->SetPosition(400.0f, 250.0f);
-	float speed = 1.0f / 7.0f;
-	player->CreateAnimation(ANIM_IDLE, speed, { 0,1,2 });
-	player->CreateAnimation(ANIM_WALK, speed, { 3, 4, 5 });
-	player->CreateAnimation(ANIM_HIDE, speed, { 9, 10, 11 });
-	player->CreateAnimation(ANIM_STEAL, speed, { 12, 13, 14 });
-	player->CreateAnimation(ANIM_RUN, speed, { 6, 7, 8 });
-	player->SetScale(0.15f);
-	//------------------------------------------------------------------------
+	myCrowdManager = new CrowdManager();
+	myPlayer = new Player();
+	myUI = new UIManager();
+	myLevel = new Level();
 }
 
-//------------------------------------------------------------------------
-// Update your simulation here. deltaTime is the elapsed time since the last update in ms.
-// This will be called at no greater frequency than the value of APP_MAX_FRAME_RATE
-//------------------------------------------------------------------------
-void Update(float deltaTime)
-{
-	//------------------------------------------------------------------------
-	
-	// close pickpocket UI with ESC
-	if (inPickpocketUI && App::IsKeyPressed(VK_CONTROL))
-	{
-		inPickpocketUI = false;
+void Update(float deltaTime) {
+	if (myPatroller->IsPlayerCaught()) {
+		// game is frozen
+		return;
 	}
+	float px, py;
+	myPlayer->GetPosition(px, py);
+	g_camera.x = px - 512.0f;
 
-	// collider
-	
-	// moving npc
-	npcTimer += deltaTime / 1000.0f;
-
-	if (!npcActive)
-	{
-		// wait then spawn
-		if (npcTimer >= npcSpawnDelay)
-		{
-			// not sure if i want these here yet
-			//npcPickpocketable = true;
-			//inPickpocketUI = false;
-
-			npcTimer = 0.0f;
-			npcActive = true;
-
-			// random direction
-			npcMoveRight = (rand() % 2) == 0;
-
-			float startX = npcMoveRight ? -100.0f : 1100.0f;
-			float startY = 280.0f;
-
-			roamingNPC->SetPosition(startX, startY);
-			roamingNPC->SetFlipX(npcMoveRight);
-			roamingNPC->SetAnimation(0);
-		}
+	if (g_camera.x < 0) {
+		g_camera.x = 0;
 	}
-	else
-	{
-		// move across screen
-		float x, y;
-		roamingNPC->GetPosition(x, y);
+	bool playerInClump = myCrowdManager->IsPlayerInClump(px, py);
+	myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
 
-		x += (npcMoveRight ? npcSpeed : -npcSpeed);
-		roamingNPC->SetPosition(x, y);
-		roamingNPC->SetFlipX(!npcMoveRight);
+	myLevel->Update(deltaTime);
+	myCrowdManager->Update(deltaTime);
+	myPlayer->Update(deltaTime);
 
-		// despawn when off screen
-		if (x > 1200.0f || x < -200.0f)
-		{
-			npcActive = false;
-			npcTimer = 0.0f;
-			roamingNPC->SetPosition(-200.0f, -200.0f);
-		}
+	rosamund->Update(deltaTime);
+	randy->Update(deltaTime);
+	granny->Update(deltaTime);
 
-		roamingNPC->Update(deltaTime);
-	}
-	// crowd clumps
-	static float swayTime = 0.0f;
-	swayTime += deltaTime / 1000.0f;
-
-	for (int i = 0; i < NUM_CLUMPS; i++)
-	{
-		CrowdClump& clump = crowdClumps[i];
-
-		float clumpSwayX = sinf(swayTime + clump.swayOffset) * 2.0f;
-
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
-		{
-			CrowdMember& m = clump.members[j];
-
-			float personalSway =
-				sinf(swayTime * 1.5f + m.personalSwayOffset) * 1.5f;
-
-			m.sprite->SetPosition(
-				clump.baseX + clumpSwayX + m.offsetX,
-				clump.baseY + personalSway + m.offsetY
-			);
-		}
-	}
-
-
-
-	if (App::GetController().GetLeftThumbStickX() > 0.5f)
-	{
-		bool sprinting = App::IsKeyPressed(VK_SHIFT);
-
-		player->SetAnimation(sprinting ? ANIM_RUN : ANIM_WALK);
-		player->SetFlipX(true);
-		float x, y;
-		player->GetPosition(x, y);
-		player->SetPosition(x + (sprinting ? RUN_SPEED : WALK_SPEED), y);
-	}
-	if (App::GetController().GetLeftThumbStickX() < -0.5f)
-	{
-		bool sprinting = App::IsKeyPressed(VK_SHIFT);
-
-		player->SetAnimation(sprinting ? ANIM_RUN : ANIM_WALK);
-		player->SetFlipX(false);
-		float x, y;
-		player->GetPosition(x, y);
-		player->SetPosition(x - (sprinting ? RUN_SPEED : WALK_SPEED), y);
-	}
-	// STEAL LOGIC
-    if (App::GetController().GetLeftThumbStickY() > 0.5f)
-    {
-		player->SetAnimation(ANIM_HIDE);
-    }
-	// HIDE LOGIC
-	if (App::GetController().GetLeftThumbStickY() < -0.5f)
-	{
-		player->SetAnimation(ANIM_STEAL);
-	}
-	// update npc
-	npc->Update(deltaTime);
-	player->Update(deltaTime);
 	bool nearNPC = IsPlayerNearNPC();
 
-	// pickpocket UI
-	if (nearNPC && npcPickpocketable && !inPickpocketUI)
-	{
-		if (App::IsKeyPressed(VK_SPACE))
-		{
-			inPickpocketUI = true;
+	if (nearNPC && !myUI->inPickpocketUI) {
+		if (activeNPC && activeNPC->GetIsAlerted()) {
+			App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
+			if (myPatroller->IsInactive()) {  // only activate if not already running
+				myPatroller->Activate();
+			}
+		}
+		else {
+			if (App::IsKeyPressed(VK_SPACE)) {
+				myUI->OpenUI();
+			}
 		}
 	}
 
-
-	//------------------------------------------------------------------------
-	// Sample Sound.
-	//------------------------------------------------------------------------
-	if (App::GetController().CheckButton(XINPUT_GAMEPAD_B, true))
-	{
-		App::PlaySound(".\\TestData\\Test.wav");
+	if (!nearNPC && myUI->inPickpocketUI) {
+		myUI->CloseUI();
 	}
+
+	myUI->Update(deltaTime, activeNPC, playerInventory);
 }
 
-//------------------------------------------------------------------------
-// Add your display calls here (DrawLine,Print, DrawSprite.) 
-// See App.h 
-//------------------------------------------------------------------------
-void Render()
-{	
-	// background
-	background->Draw();
+void Render() {
+	myLevel->RenderBackground(g_camera.x);
 
-	bool colliding = IsPlayerNearNPC();
-
-	if (colliding) {
-		App::Print(10, 100, "Press Space to Inspect", 1.0f, 0.0f, 0.0f);
+	bool colliding = (activeNPC != nullptr);
+	if (colliding && !myUI->inPickpocketUI) {
+		App::Print(10, 100, "Press Space to view inventory", 0.0f, 0.0f, 0.0f);
 	}
-	//------------------------------------------------------------------------
+	myCrowdManager->Render(g_camera.x, g_camera.y);
+	rosamund->Render(g_camera.x, g_camera.y);
+	granny->Render(g_camera.x, g_camera.y);
+	myPlayer->Render(g_camera.x, g_camera.y);
+	randy->Render(g_camera.x, g_camera.y);
 
-	// draw pickpocketable npc
-	if (npcPickpocketable && !inPickpocketUI)
-	{
-		npc->SetColor(1.0f, 1.0f, 1.0f); //  green
-	}
-	else
-	{
-		npc->SetColor(1.0f, 1.0f, 1.0f);
-	}
-
-
-
-	npc->Draw();
-
-	// crowd draw
-	for (int i = 0; i < NUM_CLUMPS; i++)
-	{
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
-		{
-			crowdClumps[i].members[j].sprite->Draw();
+	for (NPC* npc : allNPCs) {
+		if (npc->GetIsAlerted()) {
+			DrawAlertIconAboveNPC(npc);
 		}
 	}
 
-	player->Draw();
-
-	if (npcActive)
-	{
-		roamingNPC->Draw();
+	myLevel->RenderForeground(g_camera.x, g_camera.y);
+	myPatroller->Render(g_camera.x, g_camera.y);
+	if (myPatroller->IsPlayerCaught()) {
+		App::Print(350, 400, "You got caught!", 1.0f, 0.0f, 0.0f);
+		App::Print(300, 350, "Close the window to restart.", 1.0f, 1.0f, 1.0f);
 	}
-
-	// pickpocket dialogue panel
-	if (inPickpocketUI)
-	{
-		npcPortrait->Draw();
-
-		App::Print(10, 100, "Press W to Pickpocket", 1.0f, 0.0f, 0.0f);
-
-		if (!pickpocketRolled &&
-			App::GetController().GetLeftThumbStickY() < -0.5f)
-		{
-			pickpocketRolled = true;
-
-			player->SetAnimation(ANIM_STEAL);
-
-			int roll = rand() % 100;
-			pickpocketSuccess = (roll < 65);
-		}
-
-		if (pickpocketRolled)
-		{
-			if (pickpocketSuccess)
-				App::Print(420, 200, "Pickpocket SUCCESS");
-			else
-				App::Print(420, 200, "Pickpocket FAILED");
-		}
-	}
-
-	// 
-	//------------------------------------------------------------------------
-	// Example Text.
-	//------------------------------------------------------------------------
-
-	//------------------------------------------------------------------------
-	// Example Line Drawing.
-	//-----------------------0.7-------------------------------------------------
-	static float a = 0.0f;
-	float r = 1.0f;
-	float g = 1.0f;
-	float b = 1.0f;
-	a += 0.1f;
-	for (int i = 0; i < 20; i++)
-	{
-
-		float sx = 200 + sinf(a + i * 0.1f)*60.0f;
-		float sy = 200 + cosf(a + i * 0.1f)*60.0f;
-		float ex = 700 - sinf(a + i * 0.1f)*60.0f;
-		float ey = 700 - cosf(a + i * 0.1f)*60.0f;
-		g = (float)i / 20.0f;
-		b = (float)i / 20.0f;
-		//App::DrawLine(sx, sy, ex, ey,r,g,b);
-	}
+	myUI->Render(activeNPC, playerInventory);
 }
-//------------------------------------------------------------------------
-// Add your shutdown code here. Called when the APP_QUIT_KEY is pressed.
-// Just before the app exits.
-//------------------------------------------------------------------------
-void Shutdown()
-{	
-	//------------------------------------------------------------------------
-	// Example Sprite Code....
-	delete player;
-	delete npc;
-	delete background;
 
-	for (int i = 0; i < NUM_CLUMPS; i++)
-	{
-		for (int j = 0; j < MEMBERS_PER_CLUMP; j++)
-		{
-			delete crowdClumps[i].members[j].sprite;
-		}
-	}
+void Shutdown() {
+	delete rosamund;
+	delete granny;
+	delete randy;
+	delete alertIcon;
 
-	delete roamingNPC;
-
-	//------------------------------------------------------------------------
+	delete myCrowdManager;
+	delete myPlayer;
+	delete myUI;
+	delete myLevel;
+	delete myPatroller;
 }
