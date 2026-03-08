@@ -21,6 +21,7 @@ private:
     CSimpleSprite* m_randy_inv_sprite;
     CSimpleSprite* m_granny_inv_sprite;
     CSimpleSprite* m_npcPortrait;
+    CSimpleSprite* m_dice_roll;
 
     CSimpleSprite* m_icon_gold;
     CSimpleSprite* m_icon_letter;
@@ -32,6 +33,10 @@ private:
     CSimpleSprite* m_icon_picture_small;
 
     CSimpleSprite* m_ui_cursor;
+    float m_diceTimer;
+    float m_failureTimer;
+    float m_diceDuration;
+    bool m_diceLanded;
     int m_currentSlot;
     bool m_navButtonDown;
     bool m_enterButtonDown;

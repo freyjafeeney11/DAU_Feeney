@@ -11,6 +11,7 @@
 #include "UIManager.h"
 #include "Level.h"
 #include "Patroller.h"
+#include "App\SimpleSound.h"
 
 struct Camera {
 	float x = 0.0f;
@@ -75,6 +76,11 @@ bool IsPlayerNearNPC() {
 }
 
 void Init() {
+	// audio .. but not working
+	//App::PlaySound(".\\TestData\\jazz.wav", DSBPLAY_LOOPING);
+	//App::PlaySound(".\\TestData\\rain.wav", true);
+	//App::PlaySound(".\\TestData\\train_sounds.wav", true);
+
 	myPatroller = new Patroller();
 	srand((unsigned int)time(nullptr));
 
