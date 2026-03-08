@@ -59,7 +59,7 @@ void Level::Update(float deltaTime) {
             m_npcTimer = 0.0f;
             m_npcActive = true;
             m_npcMoveRight = (rand() % 2) == 0;
-            float startX = m_npcMoveRight ? -100.0f : 1100.0f;
+            float startX = m_npcMoveRight ? -100.0f : 3000.0f;
             float startY = 280.0f;
             m_roamingNPC->SetPosition(startX, startY);
             m_roamingNPC->SetFlipX(m_npcMoveRight);
@@ -73,7 +73,7 @@ void Level::Update(float deltaTime) {
         m_roamingNPC->SetPosition(x, y);
         m_roamingNPC->SetFlipX(!m_npcMoveRight);
 
-        if (x > 1200.0f || x < -200.0f) {
+        if (x > 2000.0f || x < -200.0f) {
             m_npcActive = false;
             m_npcTimer = 0.0f;
             m_roamingNPC->SetPosition(-200.0f, -200.0f);
