@@ -24,7 +24,7 @@ UIManager::UIManager() {
     }
 
     m_dice_roll = App::CreateSprite(".\\TestData\\dice_roll.png", 5, 1);
-    m_dice_roll->SetPosition(944.0f, 275.0f);
+    m_dice_roll->SetPosition(946.0f, 277.0f);
     m_dice_roll->SetScale(0.1f);
     m_dice_roll->CreateAnimation(0, 0.1f, { 0,1,2,3,4 });
     m_dice_roll->SetAnimation(0);

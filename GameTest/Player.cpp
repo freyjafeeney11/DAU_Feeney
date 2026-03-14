@@ -65,3 +65,6 @@ void Player::Render(float camX, float camY) {
 void Player::GetPosition(float& x, float& y) {
     m_sprite->GetPosition(x, y);
 }
+void Player::SetPosition(float x, float y) {
+    m_sprite->SetPosition(x, y);
+}

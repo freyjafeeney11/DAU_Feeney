@@ -22,6 +22,7 @@ public:
     ~Player();
 
     void Update(float deltaTime);
+    void SetPosition(float x, float y);
     void Render(float camX, float camY);
     void GetPosition(float& x, float& y);
 };
