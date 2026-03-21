@@ -34,8 +34,8 @@ Rooftop::Rooftop() {
     m_plant->SetScale(0.6f);
 
     m_campfire = App::CreateSprite(".\\TestData\\fire_anim.png", 5, 1);
-    m_campfire->SetPosition(550.0f, 400.0f);
-    m_campfire->SetScale(0.6f);
+    m_campfire->SetPosition(585.0f, 324.0f);
+    m_campfire->SetScale(0.77f);
     m_campfire->CreateAnimation(0, 0.1f, { 0, 1, 2, 3, 4 });
     m_campfire->SetAnimation(0);
 

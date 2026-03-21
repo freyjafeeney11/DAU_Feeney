@@ -25,7 +25,7 @@ private:
 
     CSimpleSprite* m_guardSprite;
     static constexpr float BG_WIDTH = 1075.0f;
-    static constexpr float GUARD_WORLD_X = 2.0f * BG_WIDTH + 695.0f;
+    static constexpr float GUARD_WORLD_X = 2.0f * BG_WIDTH + 716.0f;
     static constexpr float GUARD_WORLD_Y = 370.0f;
 
     CSimpleSprite* m_ladderSprite;
