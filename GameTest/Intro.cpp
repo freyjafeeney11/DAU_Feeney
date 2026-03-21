@@ -88,7 +88,7 @@ void Intro::Render() {
     // Dialogue box and typewriter text at top of screen
     m_dialogueBox->SetPosition(500.0f, 980.0f);
     m_dialogueBox->Draw();
-    App::Print(165, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f);
+    App::Print(169, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f);
 }
 
 bool Intro::IsDone() const {

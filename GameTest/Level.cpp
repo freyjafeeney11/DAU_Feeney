@@ -7,7 +7,7 @@ Level::Level() {
     m_city->SetPosition(512.0f, 450.0f);
     m_city->SetScale(0.6f);
 
-    m_background = App::CreateSprite(".\\TestData\\train_bg.png", 1, 1);
+    m_background = App::CreateSprite(".\\TestData\\train_interior.png", 1, 1);
     m_background->SetPosition(500.0f, 500.0f);
     m_background->SetScale(0.6f);
 

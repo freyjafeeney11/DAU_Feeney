@@ -16,7 +16,9 @@
 #include "Intro.h"
 #include "App\SimpleSound.h"
 
-#define SKIP_INTRO false
+#define SKIP_INTRO true
+
+// things to fix: y level too high after leaving camp, player inventory sprites
 
 SceneState g_scene = SKIP_INTRO ? SceneState::TRAIN_INTERIOR : SceneState::MAIN_MENU;
 bool g_nearLadder = false;
@@ -137,14 +139,13 @@ void Update(float deltaTime) {
 	}
 
 	if (g_scene == SceneState::ROOFTOP) {
-		myRooftop->Update(deltaTime);
-
 		float px, py;
 		myPlayer->GetPosition(px, py);
+		myRooftop->Update(deltaTime, px);
 
 		g_nearHatch = myRooftop->IsPlayerNearHatch(px);
 		if (g_nearHatch && App::IsKeyPressed(VK_DOWN)) {
-			myPlayer->SetPosition(myLevel->GetLadderX(), 340.0f);
+			myPlayer->SetPosition(myLevel->GetLadderX(), 250.0f);
 			g_scene = SceneState::TRAIN_INTERIOR;
 		}
 
@@ -219,7 +220,9 @@ void Render() {
 
 	if (g_scene == SceneState::ROOFTOP) {
 		myRooftop->Render();
-		myPlayer->Render(0.0f, 0.0f);
+		if (!myRooftop->IsSleeping())
+			myPlayer->Render(0.0f, 0.0f);
+		myRooftop->RenderPlant();
 		if (g_nearHatch) {
 			App::Print(10, 60, "Press Down to climb back down", 1.0f, 1.0f, 0.0f);
 		}
