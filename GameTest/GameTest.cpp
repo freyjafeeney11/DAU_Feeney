@@ -93,8 +93,12 @@ bool IsPlayerNearLadder() {
 }
 
 void Init() {
-	//App::PlaySound(".\\TestData\\jazz.wav", DSBPLAY_LOOPING);
-	//App::PlaySound(".\\TestData\\rain.wav", true);
+	App::PlaySound(".\\TestData\\audio\\jazz.wav", DSBPLAY_LOOPING);
+	App::PlaySound(".\\TestData\\audio\\train_sounds.wav", DSBPLAY_LOOPING);
+	App::PlaySound(".\\TestData\\audio\\rain.wav", DSBPLAY_LOOPING);
+
+
+	App::PlaySound(".\\TestData\\goldsteal.wav", true);
 	//App::PlaySound(".\\TestData\\train_sounds.wav", true);
 
 	myPatroller = new Patroller();
