@@ -16,6 +16,7 @@ NPC::NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* np
     m_sprite->SetScale(scale);
     m_sprite->CreateAnimation(0, 0.4f, { 0,1,2,3,4 });
     m_sprite->SetAnimation(0);
+    m_alertTimer = 0.0f;
 }
 
 NPC::~NPC() {
@@ -24,6 +25,13 @@ NPC::~NPC() {
 
 void NPC::Update(float deltaTime) {
     m_sprite->Update(deltaTime);
+    if (m_isAlerted) {
+        m_alertTimer += deltaTime / 1000.0f;
+        if (m_alertTimer >= ALERT_DURATION) {
+            m_isAlerted = false;
+            m_alertTimer = 0.0f;
+        }
+    }
 }
 
 void NPC::Render(float camX, float camY) {

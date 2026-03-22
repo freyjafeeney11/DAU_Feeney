@@ -103,9 +103,9 @@ void Init() {
 	alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
 	alertIcon->SetScale(0.1f);
 
-	rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 600.0f, 360.0f, 0.2f);
-	granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1220.0f, 320.0f, 0.15f);
-	randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 250.0f, 340.0f, 0.2f);
+	rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 700.0f, 330.0f, 0.19f);
+	granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1620.0f, 320.0f, 0.16f);
+	randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 250.0f, 330.0f, 0.2f);
 
 	allNPCs.push_back(rosamund);
 	allNPCs.push_back(granny);
@@ -250,9 +250,9 @@ void Render() {
 		}
 	}
 
-	myLevel->RenderForeground(g_camera.x, g_camera.y);
 	myPatroller->Render(g_camera.x, g_camera.y);
 	myPlayer->Render(g_camera.x, g_camera.y);
+	myLevel->RenderForeground(g_camera.x, g_camera.y);
 
 	if (myPatroller->IsPlayerCaught()) {
 		App::Print(350, 400, "You got caught!", 1.0f, 0.0f, 0.0f);

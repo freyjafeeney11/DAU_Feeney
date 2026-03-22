@@ -6,8 +6,8 @@
 
 class CrowdManager {
 private:
-    static const int ms_NUM_CLUMPS = 4;
-    static const int ms_MEMBERS_PER_CLUMP = 6;
+    static const int ms_NUM_CLUMPS = 6;
+    static const int ms_MEMBERS_PER_CLUMP = 3;
     static float GetRandomOffset(int amplitude);
 
     struct CrowdMember {
