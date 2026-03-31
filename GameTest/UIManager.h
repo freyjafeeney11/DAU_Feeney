@@ -64,6 +64,7 @@ public:
 
     UIManager();
     ~UIManager();
+    bool IsAnyUIOpen() const;
     void Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playerInventory);
     void Render(NPC* activeNPC, std::vector<Item>& playerInventory);
     void OpenUI();

@@ -17,12 +17,12 @@ private:
     float m_outOfRangeTimer;
     float m_caughtTimer;
 
-    static constexpr float ms_SPEED = 3.0f;
+    static constexpr float ms_SPEED = 5.0f;
     static constexpr float ms_CHASE_RANGE = 600.0f;
     static constexpr float ms_CATCH_RADIUS = 80.0f;
     static constexpr float ms_HIDE_TIME = 3.0f;
     static constexpr float ms_OUT_OF_RANGE_TIME = 7.0f;
-    static constexpr float ms_CAUGHT_FREEZE_TIME = 3.0f; // seconds to show "caught" screen
+    static constexpr float ms_CAUGHT_FREEZE_TIME = 2.0f;
 
     bool m_playerCaught;
 

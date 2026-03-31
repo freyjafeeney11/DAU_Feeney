@@ -4,16 +4,16 @@
 
 namespace UserControls {
     inline bool IsUserGoingRight() {
-        return App::GetController().GetLeftThumbStickX() > 0.5f;
+        return App::IsKeyPressed(VK_RIGHT);
     }
     inline bool IsUserGoingLeft() {
-        return App::GetController().GetLeftThumbStickX() < -0.5f;
+        return App::IsKeyPressed(VK_LEFT);
     }
     inline bool IsUserGoingUp() {
-        return App::GetController().GetLeftThumbStickY() > 0.5f;
+        return App::IsKeyPressed(VK_UP);
     }
     inline bool IsUserGoingDown() {
-        return App::GetController().GetLeftThumbStickY() < -0.5f;
+        return App::IsKeyPressed(VK_DOWN);
     }
     inline bool IsUserSprinting() {
         return App::IsKeyPressed(VK_SHIFT);

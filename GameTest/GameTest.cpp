@@ -159,56 +159,61 @@ void Update(float deltaTime) {
 
 	if (myPatroller->IsPlayerCaught()) return;
 
-	float px, py;
-	myPlayer->GetPosition(px, py);
-
-	g_camera.x = px - 512.0f;
-	if (g_camera.x < 0.0f) g_camera.x = 0.0f;
-
-	bool playerInClump = myCrowdManager->IsPlayerInClump(px, py);
-	myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
-
-	myLevel->Update(deltaTime);
-	myCrowdManager->Update(deltaTime);
-	myPlayer->Update(deltaTime);
-
-	rosamund->Update(deltaTime);
-	randy->Update(deltaTime);
-	granny->Update(deltaTime);
-
-	g_nearLadder = IsPlayerNearLadder() && !myUI->inPickpocketUI;
-	if (g_nearLadder && App::IsKeyPressed(VK_UP)) {
-		myPlayer->SetPosition(myRooftop->GetSpawnX(), myRooftop->GetSpawnY());
-		g_scene = SceneState::ROOFTOP;
-		return;
-	}
-
-	bool nearNPC = IsPlayerNearNPC();
-
-	if (nearNPC && !myUI->inPickpocketUI) {
-		if (activeNPC && activeNPC->GetIsAlerted()) {
-			App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
-			if (myPatroller->IsInactive()) {
-				myPatroller->Activate();
-			}
-		}
-		else {
-			if (App::IsKeyPressed(VK_SPACE)) {
-				myUI->OpenUI();
-			}
-		}
-	}
-
-	if (!nearNPC && myUI->inPickpocketUI) {
-		myUI->CloseUI();
-	}
-
 	myUI->Update(deltaTime, activeNPC, playerInventory);
-	// x boundary?
-	g_camera.x = px - 512.0f;
-	if (g_camera.x < 0.0f) g_camera.x = 0.0f;
-	if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
-	if (px > 3225.0f) myPlayer->SetPosition(3225.0f, py);
+
+	if (!myUI->IsAnyUIOpen()) {
+
+		float px, py;
+		myPlayer->GetPosition(px, py);
+
+		g_camera.x = px - 512.0f;
+		if (g_camera.x < 0.0f) g_camera.x = 0.0f;
+
+		bool playerInClump = myCrowdManager->IsPlayerInClump(px, py);
+		myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
+
+		myLevel->Update(deltaTime);
+		myCrowdManager->Update(deltaTime);
+		myPlayer->Update(deltaTime);
+
+		rosamund->Update(deltaTime);
+		randy->Update(deltaTime);
+		granny->Update(deltaTime);
+
+		g_nearLadder = IsPlayerNearLadder() && !myUI->inPickpocketUI;
+		if (g_nearLadder && App::IsKeyPressed(VK_UP)) {
+			myPlayer->SetPosition(myRooftop->GetSpawnX(), myRooftop->GetSpawnY());
+			g_scene = SceneState::ROOFTOP;
+			return;
+		}
+
+		bool nearNPC = IsPlayerNearNPC();
+
+		if (nearNPC && !myUI->inPickpocketUI) {
+			if (activeNPC && activeNPC->GetIsAlerted()) {
+				App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
+				if (myPatroller->IsInactive()) {
+					myPatroller->Activate();
+				}
+			}
+			else {
+				if (App::IsKeyPressed(VK_RETURN)) {
+					myUI->OpenUI();
+				}
+			}
+		}
+
+		if (!nearNPC && myUI->inPickpocketUI) {
+			myUI->CloseUI();
+		}
+
+		myUI->Update(deltaTime, activeNPC, playerInventory);
+		// x boundary?
+		g_camera.x = px - 512.0f;
+		if (g_camera.x < 0.0f) g_camera.x = 0.0f;
+		if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
+		if (px > 3225.0f) myPlayer->SetPosition(3225.0f, py);
+	}
 }
 
 void Render() {
@@ -236,11 +241,11 @@ void Render() {
 	myLevel->RenderBackground(g_camera.x);
 
 	if (activeNPC && !myUI->inPickpocketUI) {
-		App::Print(10, 100, "Press Space to view inventory", 0.0f, 0.0f, 0.0f);
+		App::Print(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f);
 	}
 
 	if (g_nearLadder) {
-		App::Print(10, 60, "Press Up to climb to the roof", 1.0f, 1.0f, 0.0f);
+		App::Print(10, 60, "Press Up to climb the ladder", 1.0f, 1.0f, 0.0f);
 	}
 
 	myCrowdManager->Render(g_camera.x, g_camera.y);

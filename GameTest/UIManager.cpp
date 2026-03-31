@@ -154,6 +154,10 @@ int UIManager::ComputeGoldCount(const std::vector<Item>& playerInventory) const 
     return total;
 }
 
+bool UIManager::IsAnyUIOpen() const {
+    return m_playerInventoryOpen || inPickpocketUI;
+}
+
 void UIManager::DrawPlayerItemIconSmall(int itemId, float x, float y) {
     CSimpleSprite* icon = nullptr;
     if (itemId == ITEM_GOLD)       icon = m_player_icon_gold_small;
@@ -168,6 +172,7 @@ void UIManager::DrawPlayerItemIconSmall(int itemId, float x, float y) {
 }
 
 void UIManager::OpenUI() {
+    m_enterButtonDown = true;
     inPickpocketUI = true;
     m_showDiceResult = false;
     m_diceLanded = false;
@@ -198,7 +203,7 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
 
     float dt = deltaTime / 1000.0f;
 
-    if (App::IsKeyPressed(VK_CONTROL)) {
+    if (App::IsKeyPressed(VK_BACK)) {
         CloseUI();
         return;
     }
