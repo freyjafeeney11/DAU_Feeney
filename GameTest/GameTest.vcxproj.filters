@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="GameTest.cpp" />
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="App\app.cpp">
       <Filter>NextAPI</Filter>
     </ClCompile>
@@ -21,9 +20,38 @@
     <ClCompile Include="stb_image\stb_image.cpp">
       <Filter>stb_image</Filter>
     </ClCompile>
+    <ClCompile Include="Campsite.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="CrowdManager.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="Intro.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="Level.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="Mainmenu.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="NPC.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="Patroller.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
+    <ClCompile Include="UIManager.cpp">
+      <Filter>Cannon</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="App\app.h">
       <Filter>NextAPI</Filter>
     </ClInclude>
@@ -48,6 +76,46 @@
     <ClInclude Include="stb_image\stb_image.h">
       <Filter>stb_image</Filter>
     </ClInclude>
+    <ClInclude Include="Campsite.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="CrowdManager.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="glut\include\GL\freeglut.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="glut\include\GL\freeglut_ext.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="glut\include\GL\freeglut_std.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="Intro.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="Level.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="Mainmenu.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="NPC.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="Patroller.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="UIManager.h">
+      <Filter>Cannon</Filter>
+    </ClInclude>
+    <ClInclude Include="UserControls.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="NextAPI">
@@ -55,6 +123,9 @@
     </Filter>
     <Filter Include="stb_image">
       <UniqueIdentifier>{61cfc19b-c57e-4021-b530-bac172fcba86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cannon">
+      <UniqueIdentifier>{0e4575f1-410c-4def-b2f1-eef6e1c413b7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
