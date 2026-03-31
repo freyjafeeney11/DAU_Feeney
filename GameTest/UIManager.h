@@ -1,17 +1,9 @@
 #pragma once
 #include "app\app.h"
 #include "NPC.h"
+#include "Item.h"
 #include <vector>
 #include <string>
-
-struct Item {
-    int id;
-    std::string name;
-    std::string flavorText;
-    int value;
-};
-
-enum { ITEM_NONE, ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_LETTER, ITEM_PICTURE };
 
 class UIManager {
 private:
@@ -39,6 +31,7 @@ private:
     CSimpleSprite* m_ui_cursor;
 
     float m_diceTimer;
+    int m_goldAmount = 0;
     float m_failureTimer;
     float m_diceDuration;
     bool m_diceLanded;
@@ -54,10 +47,8 @@ private:
     float m_slotCoords[6][2];
     float m_playerSlotCoords[6][2];
 
-    Item GetItemFromLibrary(int itemId);
     int ComputeGoldCount(const std::vector<Item>& playerInventory) const;
     void DrawItemIconSmall(int itemId, float x, float y);
-    void DrawPlayerItemIconSmall(int itemId, float x, float y);
 
 public:
     bool inPickpocketUI;

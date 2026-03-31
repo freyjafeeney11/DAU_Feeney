@@ -1,4 +1,3 @@
-// NPC.cpp
 #include "stdafx.h"
 #include "NPC.h"
 
@@ -8,7 +7,7 @@ NPC::NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* np
     m_isAlerted = false;
 
     for (int i = 0; i < 6; i++) {
-        m_lootTable[i] = npcLoot[i];
+        m_lootTable[i] = GenerateItem(npcLoot[i]);
     }
 
     m_sprite = App::CreateSprite(spritePath, 4, 1);
@@ -37,10 +36,8 @@ void NPC::Update(float deltaTime) {
 void NPC::Render(float camX, float camY) {
     float actualX, actualY;
     m_sprite->GetPosition(actualX, actualY);
-
     m_sprite->SetPosition(actualX - camX, actualY - camY);
     m_sprite->Draw();
-
     m_sprite->SetPosition(actualX, actualY);
 }
 

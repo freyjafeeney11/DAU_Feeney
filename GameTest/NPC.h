@@ -1,13 +1,13 @@
-// NPC.h
 #pragma once
 #include "app\app.h"
 #include <string>
+#include "Item.h"
 
 class NPC {
 private:
     CSimpleSprite* m_sprite;
     std::string m_name;
-    int m_lootTable[6];
+    Item m_lootTable[6];
     int m_difficulty;
     bool m_isAlerted;
     float m_alertTimer;
@@ -23,7 +23,7 @@ public:
 
     std::string GetName()      const { return m_name; }
     int GetDifficulty()        const { return m_difficulty; }
-    int* GetLootTable()        { return m_lootTable; }
+    Item* GetLootTable() { return m_lootTable; }
     bool GetIsAlerted()        const { return m_isAlerted; }
     void SetAlerted(bool alerted) {
         m_isAlerted = alerted;
