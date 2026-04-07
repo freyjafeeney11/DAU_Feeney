@@ -11,6 +11,7 @@ private:
     CSimpleSprite* m_player_inventory_screen;
     CSimpleSprite* m_player_watch_sprite;
     CSimpleSprite* m_rosamund_inv_sprite;
+    CSimpleSprite* m_overlay_sprite;
     CSimpleSprite* m_randy_inv_sprite;
     CSimpleSprite* m_granny_inv_sprite;
     CSimpleSprite* m_npcPortrait;
@@ -29,6 +30,7 @@ private:
     CSimpleSprite* m_player_icon_flashdrive_small;
     CSimpleSprite* m_player_icon_picture_small;
     CSimpleSprite* m_ui_cursor;
+    CSimpleSprite* m_player_inventory_screen_title;
 
     float m_diceTimer;
     int m_goldAmount = 0;

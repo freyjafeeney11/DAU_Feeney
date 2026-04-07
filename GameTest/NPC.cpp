@@ -33,7 +33,13 @@ void NPC::Update(float deltaTime) {
     }
 }
 
-void NPC::Render(float camX, float camY) {
+void NPC::Render(float camX, float camY, bool targeted=false) {
+    if (targeted) {
+        m_sprite->SetColor(1.0f, 0.45f, 0.45f);
+    }
+    else {
+        m_sprite->SetColor(1.0f, 1.0f, 1.0f);
+    }
     float actualX, actualY;
     m_sprite->GetPosition(actualX, actualY);
     m_sprite->SetPosition(actualX - camX, actualY - camY);

@@ -5,6 +5,8 @@
 class Player {
 private:
     CSimpleSprite* m_sprite;
+    CSimpleSprite* m_hideSprite;
+    bool m_isHiding;
 
     static constexpr float ms_WALK_SPEED = 3.5f;
     static constexpr float ms_RUN_SPEED = 7.0f;
@@ -20,9 +22,9 @@ private:
 public:
     Player();
     ~Player();
-
+    bool IsHiding() const { return m_isHiding; }
     void Update(float deltaTime);
     void SetPosition(float x, float y);
-    void Render(float camX, float camY);
+    void Render(float camX, float camY, bool hidden);
     void GetPosition(float& x, float& y);
 };

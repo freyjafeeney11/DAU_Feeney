@@ -169,7 +169,8 @@ void Update(float deltaTime) {
 		g_camera.x = px - 512.0f;
 		if (g_camera.x < 0.0f) g_camera.x = 0.0f;
 
-		bool playerInClump = myCrowdManager->IsPlayerInClump(px, py);
+		// hiding and inside clump
+		bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding();
 		myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
 
 		myLevel->Update(deltaTime);
@@ -230,7 +231,7 @@ void Render() {
 	if (g_scene == SceneState::ROOFTOP) {
 		myRooftop->Render();
 		if (!myRooftop->IsSleeping())
-			myPlayer->Render(0.0f, 0.0f);
+			myPlayer->Render(0.0f, 0.0f, false);
 		myRooftop->RenderPlant();
 		if (g_nearHatch) {
 			App::Print(10, 60, "Press Down to climb back down", 1.0f, 1.0f, 0.0f);
@@ -249,9 +250,11 @@ void Render() {
 	}
 
 	myCrowdManager->Render(g_camera.x, g_camera.y);
-	rosamund->Render(g_camera.x, g_camera.y);
-	granny->Render(g_camera.x, g_camera.y);
-	randy->Render(g_camera.x, g_camera.y);
+
+	for (NPC* npc : allNPCs) {
+		bool targeted = (npc == activeNPC && !myUI->inPickpocketUI);
+		npc->Render(g_camera.x, g_camera.y, targeted);
+	}
 
 	for (NPC* npc : allNPCs) {
 		if (npc->GetIsAlerted()) {
@@ -260,7 +263,14 @@ void Render() {
 	}
 
 	myPatroller->Render(g_camera.x, g_camera.y);
-	myPlayer->Render(g_camera.x, g_camera.y);
+	// render player
+	float px, py;
+	myPlayer->GetPosition(px, py);
+	bool inClump = myCrowdManager->IsPlayerInClump(px, py);
+	bool hidden = inClump && myPlayer->IsHiding();
+	myPlayer->Render(g_camera.x, g_camera.y, hidden);
+
+
 	myLevel->RenderForeground(g_camera.x, g_camera.y);
 
 	if (myPatroller->IsPlayerCaught()) {

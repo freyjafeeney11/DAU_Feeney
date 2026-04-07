@@ -18,7 +18,7 @@ public:
     ~NPC();
 
     void Update(float deltaTime);
-    void Render(float camX, float camY);
+    void Render(float camX, float camY, bool targeted);
     void GetPosition(float& x, float& y);
 
     std::string GetName()      const { return m_name; }
