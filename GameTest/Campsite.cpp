@@ -33,6 +33,10 @@ Rooftop::Rooftop() {
     m_plant->SetPosition(512.0f, 400.0f);
     m_plant->SetScale(0.6f);
 
+    m_goblin = App::CreateSprite(".\\TestData\\goblin.png", 1, 1);
+    m_goblin->SetPosition(512.0f, 400.0f);
+    m_goblin->SetScale(0.6f);
+
     m_campfire = App::CreateSprite(".\\TestData\\fire_anim.png", 5, 1);
     m_campfire->SetPosition(585.0f, 324.0f);
     m_campfire->SetScale(0.77f);
@@ -52,6 +56,7 @@ Rooftop::~Rooftop() {
     delete m_dayclouds;
     delete m_nightclouds;
     delete m_tentflaps;
+    delete m_goblin;
     delete m_tentsleep;
     delete m_plant;
     delete m_campfire;
@@ -92,6 +97,8 @@ void Rooftop::Render() {
     m_background->Draw();
     m_campfire->Draw();
 
+    
+
     if (!m_playerInTentZone) {
         m_tentflaps->SetPosition(512.0f, 400.0f);
         m_tentflaps->Draw();
@@ -101,6 +108,7 @@ void Rooftop::Render() {
         m_tentsleep->SetPosition(512.0f, 400.0f);
         m_tentsleep->Draw();
     }
+    m_goblin->Draw();
 }
 
 void Rooftop::RenderPlant() {

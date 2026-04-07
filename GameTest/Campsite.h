@@ -12,6 +12,7 @@ private:
     CSimpleSprite* m_tentsleep;
     CSimpleSprite* m_plant;
     CSimpleSprite* m_campfire;
+    CSimpleSprite* m_goblin;
 
     float m_cloudOffset;
     bool  m_playerInTentZone;
