@@ -32,7 +32,7 @@
     <ClCompile Include="Level.cpp">
       <Filter>Cannon</Filter>
     </ClCompile>
-    <ClCompile Include="Mainmenu.cpp">
+    <ClCompile Include="MainMenu.cpp">
       <Filter>Cannon</Filter>
     </ClCompile>
     <ClCompile Include="NPC.cpp">
@@ -50,6 +50,7 @@
     <ClCompile Include="UIManager.cpp">
       <Filter>Cannon</Filter>
     </ClCompile>
+    <ClCompile Include="GameClock.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App\app.h">
@@ -97,7 +98,7 @@
     <ClInclude Include="Level.h">
       <Filter>Cannon</Filter>
     </ClInclude>
-    <ClInclude Include="Mainmenu.h">
+    <ClInclude Include="MainMenu.h">
       <Filter>Cannon</Filter>
     </ClInclude>
     <ClInclude Include="NPC.h">
@@ -116,6 +117,7 @@
       <Filter>Cannon</Filter>
     </ClInclude>
     <ClInclude Include="UserControls.h" />
+    <ClInclude Include="GameClock.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="NextAPI">

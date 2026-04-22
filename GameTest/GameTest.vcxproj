@@ -184,12 +184,13 @@
     <ClInclude Include="App\SimpleSprite.h" />
     <ClInclude Include="Campsite.h" />
     <ClInclude Include="CrowdManager.h" />
+    <ClInclude Include="GameClock.h" />
     <ClInclude Include="glut\include\GL\freeglut.h" />
     <ClInclude Include="glut\include\GL\freeglut_ext.h" />
     <ClInclude Include="glut\include\GL\freeglut_std.h" />
     <ClInclude Include="Intro.h" />
     <ClInclude Include="Level.h" />
-    <ClInclude Include="Mainmenu.h">
+    <ClInclude Include="MainMenu.h">
       <DeploymentContent>false</DeploymentContent>
     </ClInclude>
     <ClInclude Include="NPC.h" />
@@ -209,10 +210,11 @@
     <ClCompile Include="App\SimpleSprite.cpp" />
     <ClCompile Include="Campsite.cpp" />
     <ClCompile Include="CrowdManager.cpp" />
+    <ClCompile Include="GameClock.cpp" />
     <ClCompile Include="GameTest.cpp" />
     <ClCompile Include="Intro.cpp" />
     <ClCompile Include="Level.cpp" />
-    <ClCompile Include="Mainmenu.cpp">
+    <ClCompile Include="MainMenu.cpp">
       <DeploymentContent>false</DeploymentContent>
     </ClCompile>
     <ClCompile Include="NPC.cpp" />

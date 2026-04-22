@@ -15,22 +15,22 @@
 #include "MainMenu.h"
 #include "Intro.h"
 #include "App\SimpleSound.h"
+#include "GameClock.h"
 
 #define SKIP_INTRO true
-
-// things to fix: y level too high after leaving camp, player inventory sprites
 
 SceneState g_scene = SKIP_INTRO ? SceneState::TRAIN_INTERIOR : SceneState::MAIN_MENU;
 bool g_nearLadder = false;
 bool g_nearHatch = false;
 
 struct Camera {
-	float x = 0.0f;
-	float y = 0.0f;
-	float targetX = 0.0f;
-	float width = 1024.0f;
+    float x = 0.0f;
+    float y = 0.0f;
+    float targetX = 0.0f;
+    float width = 1024.0f;
 } g_camera;
 
+GameClock* g_clock;
 Patroller* myPatroller;
 CrowdManager* myCrowdManager;
 Player* myPlayer;
@@ -55,244 +55,264 @@ NPC* granny;
 NPC* randy;
 
 void DrawAlertIconAboveNPC(NPC* npc) {
-	if (!npc || !alertIcon) return;
-	float x, y;
-	npc->GetPosition(x, y);
-	float worldHeight = npc->GetHeight() * npc->GetScale();
+    if (!npc || !alertIcon) return;
+    float x, y;
+    npc->GetPosition(x, y);
+    float worldHeight = npc->GetHeight() * npc->GetScale();
 
-	static float t = 0.0f;
-	t += 0.05f;
-	float bob = sinf(t) * 4.0f;
+    static float t = 0.0f;
+    t += 0.05f;
+    float bob = sinf(t) * 4.0f;
 
-	alertIcon->SetPosition(x - g_camera.x, y + (worldHeight * 0.5f) + 10.0f + bob);
-	alertIcon->Draw();
+    alertIcon->SetPosition(x - g_camera.x, y + (worldHeight * 0.5f) + 10.0f + bob);
+    alertIcon->Draw();
 }
 
 bool IsPlayerNearNPC() {
-	float px, py, nx, ny;
-	myPlayer->GetPosition(px, py);
-	activeNPC = nullptr;
-	const float playerRadius = 20.0f;
-	const float npcRadius = 100.0f;
-	for (NPC* npc : allNPCs) {
-		npc->GetPosition(nx, ny);
-		float dx = px - nx;
-		float dy = py - ny;
-		if (sqrtf(dx * dx + dy * dy) < (playerRadius + npcRadius)) {
-			activeNPC = npc;
-			return true;
-		}
-	}
-	return false;
+    float px, py, nx, ny;
+    myPlayer->GetPosition(px, py);
+    activeNPC = nullptr;
+    const float playerRadius = 20.0f;
+    const float npcRadius = 100.0f;
+    for (NPC* npc : allNPCs) {
+        npc->GetPosition(nx, ny);
+        float dx = px - nx;
+        float dy = py - ny;
+        if (sqrtf(dx * dx + dy * dy) < (playerRadius + npcRadius)) {
+            activeNPC = npc;
+            return true;
+        }
+    }
+    return false;
 }
 
 bool IsPlayerNearLadder() {
-	float px, py;
-	myPlayer->GetPosition(px, py);
-	return fabsf(px - myLevel->GetLadderX()) < 120.0f;
+    float px, py;
+    myPlayer->GetPosition(px, py);
+    return fabsf(px - myLevel->GetLadderX()) < 120.0f;
 }
 
 void Init() {
-	App::PlaySound(".\\TestData\\audio\\jazz.wav", DSBPLAY_LOOPING);
-	App::PlaySound(".\\TestData\\audio\\train_sounds.wav", DSBPLAY_LOOPING);
-	App::PlaySound(".\\TestData\\audio\\rain.wav", DSBPLAY_LOOPING);
+    App::PlaySound(".\\TestData\\audio\\jazz.wav", DSBPLAY_LOOPING);
+    App::PlaySound(".\\TestData\\audio\\train_sounds.wav", DSBPLAY_LOOPING);
+    App::PlaySound(".\\TestData\\audio\\rain.wav", DSBPLAY_LOOPING);
 
+    App::PlaySound(".\\TestData\\goldsteal.wav", true);
 
-	App::PlaySound(".\\TestData\\goldsteal.wav", true);
-	//App::PlaySound(".\\TestData\\train_sounds.wav", true);
+    myPatroller = new Patroller();
+    srand((unsigned int)time(nullptr));
 
-	myPatroller = new Patroller();
-	srand((unsigned int)time(nullptr));
+    alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
+    alertIcon->SetScale(0.1f);
+    g_clock = new GameClock();
+    rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 700.0f, 330.0f, 0.19f);
+    granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1620.0f, 320.0f, 0.16f);
+    randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 250.0f, 330.0f, 0.2f);
 
-	alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
-	alertIcon->SetScale(0.1f);
+    allNPCs.push_back(rosamund);
+    allNPCs.push_back(granny);
+    allNPCs.push_back(randy);
 
-	rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 700.0f, 330.0f, 0.19f);
-	granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1620.0f, 320.0f, 0.16f);
-	randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 250.0f, 330.0f, 0.2f);
-
-	allNPCs.push_back(rosamund);
-	allNPCs.push_back(granny);
-	allNPCs.push_back(randy);
-
-	myCrowdManager = new CrowdManager();
-	myPlayer = new Player();
-	myUI = new UIManager();
-	myLevel = new Level();
-	myRooftop = new Rooftop();
-	myMainMenu = new MainMenu();
-	myIntro = new Intro();
+    myCrowdManager = new CrowdManager();
+    myPlayer = new Player();
+    myUI = new UIManager();
+    myLevel = new Level();
+    myRooftop = new Rooftop();
+    myMainMenu = new MainMenu();
+    myIntro = new Intro();
 }
 
 void Update(float deltaTime) {
 
-	if (g_scene == SceneState::MAIN_MENU) {
-		myMainMenu->Update(deltaTime);
-		if (myMainMenu->ShouldStart()) {
-			g_scene = SceneState::INTRO;
-		}
-		return;
-	}
+    if (g_scene == SceneState::MAIN_MENU) {
+        myMainMenu->Update(deltaTime);
+        if (myMainMenu->ShouldStart()) {
+            g_scene = SceneState::INTRO;
+        }
+        return;
+    }
 
-	if (g_scene == SceneState::INTRO) {
-		myIntro->Update(deltaTime);
-		if (myIntro->IsDone()) {
-			g_scene = SceneState::TRAIN_INTERIOR;
-		}
-		return;
-	}
+    if (g_scene == SceneState::INTRO) {
+        myIntro->Update(deltaTime);
+        if (myIntro->IsDone()) {
+            g_scene = SceneState::TRAIN_INTERIOR;
+        }
+        return;
+    }
 
-	if (g_scene == SceneState::ROOFTOP) {
-		float px, py;
-		myPlayer->GetPosition(px, py);
-		myRooftop->Update(deltaTime, px);
+    if (g_scene == SceneState::ROOFTOP) {
+        g_clock->Update(deltaTime);
+        float px, py;
+        myPlayer->GetPosition(px, py);
 
-		g_nearHatch = myRooftop->IsPlayerNearHatch(px);
-		if (g_nearHatch && App::IsKeyPressed(VK_DOWN)) {
-			myPlayer->SetPosition(myLevel->GetLadderX(), 250.0f);
-			g_scene = SceneState::TRAIN_INTERIOR;
-		}
+        myRooftop->Update(deltaTime, px, playerInventory);
 
-		myPlayer->Update(deltaTime);
-		return;
-	}
+        if (myRooftop->JustSlept()) {
+            g_clock->AdvanceToMorning();
+            // Removed the teleport! Player will wake up where they slept.
+        }
 
-	if (myPatroller->IsPlayerCaught()) return;
+        g_nearHatch = myRooftop->IsPlayerNearHatch(px);
+        if (g_nearHatch && App::IsKeyPressed(VK_DOWN)) {
+            myPlayer->SetPosition(myLevel->GetLadderX(), 250.0f);
+            g_scene = SceneState::TRAIN_INTERIOR;
+        }
 
-	myUI->Update(deltaTime, activeNPC, playerInventory);
+        if (!myRooftop->IsTrading()) {
+            myPlayer->Update(deltaTime);
+        }
+        return;
+    }
 
-	if (!myUI->IsAnyUIOpen()) {
+    g_clock->Update(deltaTime);
+    if (myPatroller->IsPlayerCaught()) return;
 
-		float px, py;
-		myPlayer->GetPosition(px, py);
+    myUI->Update(deltaTime, activeNPC, playerInventory);
 
-		g_camera.x = px - 512.0f;
-		if (g_camera.x < 0.0f) g_camera.x = 0.0f;
+    if (!myUI->IsAnyUIOpen()) {
 
-		// hiding and inside clump
-		bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding();
-		myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
+        float px, py;
+        myPlayer->GetPosition(px, py);
 
-		myLevel->Update(deltaTime);
-		myCrowdManager->Update(deltaTime);
-		myPlayer->Update(deltaTime);
+        g_camera.x = px - 512.0f;
+        if (g_camera.x < 0.0f) g_camera.x = 0.0f;
 
-		rosamund->Update(deltaTime);
-		randy->Update(deltaTime);
-		granny->Update(deltaTime);
+        bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding();
+        myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
 
-		g_nearLadder = IsPlayerNearLadder() && !myUI->inPickpocketUI;
-		if (g_nearLadder && App::IsKeyPressed(VK_UP)) {
-			myPlayer->SetPosition(myRooftop->GetSpawnX(), myRooftop->GetSpawnY());
-			g_scene = SceneState::ROOFTOP;
-			return;
-		}
+        myLevel->Update(deltaTime);
+        myCrowdManager->Update(deltaTime);
+        myPlayer->Update(deltaTime);
 
-		bool nearNPC = IsPlayerNearNPC();
+        rosamund->Update(deltaTime);
+        randy->Update(deltaTime);
+        granny->Update(deltaTime);
 
-		if (nearNPC && !myUI->inPickpocketUI) {
-			if (activeNPC && activeNPC->GetIsAlerted()) {
-				App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
-				if (myPatroller->IsInactive()) {
-					myPatroller->Activate();
-				}
-			}
-			else {
-				if (App::IsKeyPressed(VK_RETURN)) {
-					myUI->OpenUI();
-				}
-			}
-		}
+        g_nearLadder = IsPlayerNearLadder() && !myUI->inPickpocketUI;
+        if (g_nearLadder && App::IsKeyPressed(VK_UP)) {
+            myPlayer->SetPosition(myRooftop->GetSpawnX(), myRooftop->GetSpawnY());
+            g_scene = SceneState::ROOFTOP;
+            return;
+        }
 
-		if (!nearNPC && myUI->inPickpocketUI) {
-			myUI->CloseUI();
-		}
+        bool nearNPC = IsPlayerNearNPC();
 
-		myUI->Update(deltaTime, activeNPC, playerInventory);
-		// x boundary?
-		g_camera.x = px - 512.0f;
-		if (g_camera.x < 0.0f) g_camera.x = 0.0f;
-		if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
-		if (px > 3225.0f) myPlayer->SetPosition(3225.0f, py);
-	}
+        if (nearNPC && !myUI->inPickpocketUI) {
+            if (activeNPC && activeNPC->GetIsAlerted()) {
+                App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
+                if (myPatroller->IsInactive()) {
+                    myPatroller->Activate();
+                }
+            }
+            else {
+                if (App::IsKeyPressed(VK_RETURN)) {
+                    myUI->OpenUI();
+                }
+            }
+        }
+
+        if (!nearNPC && myUI->inPickpocketUI) {
+            myUI->CloseUI();
+        }
+
+        myUI->Update(deltaTime, activeNPC, playerInventory);
+
+        g_camera.x = px - 512.0f;
+        if (g_camera.x < 0.0f) g_camera.x = 0.0f;
+        if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
+        if (px > 3225.0f) myPlayer->SetPosition(3225.0f, py);
+    }
 }
 
 void Render() {
-	if (g_scene == SceneState::MAIN_MENU) {
-		myMainMenu->Render();
-		return;
-	}
+    if (g_scene == SceneState::MAIN_MENU) {
+        myMainMenu->Render();
+        return;
+    }
 
-	if (g_scene == SceneState::INTRO) {
-		myIntro->Render();
-		return;
-	}
+    if (g_scene == SceneState::INTRO) {
+        myIntro->Render();
+        return;
+    }
 
-	if (g_scene == SceneState::ROOFTOP) {
-		myRooftop->Render();
-		if (!myRooftop->IsSleeping())
-			myPlayer->Render(0.0f, 0.0f, false);
-		myRooftop->RenderPlant();
-		if (g_nearHatch) {
-			App::Print(10, 60, "Press Down to climb back down", 1.0f, 1.0f, 0.0f);
-		}
-		return;
-	}
+    if (g_scene == SceneState::ROOFTOP) {
+        myRooftop->Render(g_clock->IsDay());
 
-	myLevel->RenderBackground(g_camera.x);
+        if (!myRooftop->IsSleeping()) {
+            myPlayer->Render(0.0f, 0.0f, false);
+        }
 
-	if (activeNPC && !myUI->inPickpocketUI) {
-		App::Print(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f);
-	}
+        // Apply the same fade to the text overlays
+        float fade = myRooftop->GetFadeBrightness();
+        char timeBuf[32];
+        sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
+        App::Print(820, 720, timeBuf, fade, fade, fade);
 
-	if (g_nearLadder) {
-		App::Print(10, 60, "Press Up to climb the ladder", 1.0f, 1.0f, 0.0f);
-	}
+        if (g_nearHatch && !myRooftop->IsTrading() && !myRooftop->IsSleeping()) {
+            App::Print(10, 60, "Press Down to climb back down", fade, fade, 0.0f);
+        }
 
-	myCrowdManager->Render(g_camera.x, g_camera.y);
+        myRooftop->RenderPlant();
+        myRooftop->RenderTradeUI(playerInventory);
 
-	for (NPC* npc : allNPCs) {
-		bool targeted = (npc == activeNPC && !myUI->inPickpocketUI);
-		npc->Render(g_camera.x, g_camera.y, targeted);
-	}
+        return;
+    }
 
-	for (NPC* npc : allNPCs) {
-		if (npc->GetIsAlerted()) {
-			DrawAlertIconAboveNPC(npc);
-		}
-	}
+    myLevel->RenderBackground(g_camera.x);
+    char timeBuf[32];
+    sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
+    App::Print(820, 720, timeBuf, 1.0f, 1.0f, 1.0f);
+    if (activeNPC && !myUI->inPickpocketUI) {
+        App::Print(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f);
+    }
 
-	myPatroller->Render(g_camera.x, g_camera.y);
-	// render player
-	float px, py;
-	myPlayer->GetPosition(px, py);
-	bool inClump = myCrowdManager->IsPlayerInClump(px, py);
-	bool hidden = inClump && myPlayer->IsHiding();
-	myPlayer->Render(g_camera.x, g_camera.y, hidden);
+    if (g_nearLadder) {
+        App::Print(10, 60, "Press Up to climb the ladder", 1.0f, 1.0f, 0.0f);
+    }
 
+    myCrowdManager->Render(g_camera.x, g_camera.y);
 
-	myLevel->RenderForeground(g_camera.x, g_camera.y);
+    for (NPC* npc : allNPCs) {
+        bool targeted = (npc == activeNPC && !myUI->inPickpocketUI);
+        npc->Render(g_camera.x, g_camera.y, targeted);
+    }
 
-	if (myPatroller->IsPlayerCaught()) {
-		App::Print(350, 400, "You got caught!", 1.0f, 0.0f, 0.0f);
-		App::Print(300, 350, "Close the window to restart.", 1.0f, 1.0f, 1.0f);
-	}
+    for (NPC* npc : allNPCs) {
+        if (npc->GetIsAlerted()) {
+            DrawAlertIconAboveNPC(npc);
+        }
+    }
 
-	myUI->Render(activeNPC, playerInventory);
+    float px, py;
+    myPlayer->GetPosition(px, py);
+    bool inClump = myCrowdManager->IsPlayerInClump(px, py);
+    bool hidden = inClump && myPlayer->IsHiding();
+    myPlayer->Render(g_camera.x, g_camera.y, hidden);
+
+    myPatroller->Render(g_camera.x, g_camera.y);
+
+    myLevel->RenderForeground(g_camera.x, g_camera.y);
+
+    if (myPatroller->IsPlayerCaught()) {
+        App::Print(350, 400, "You got caught!", 1.0f, 0.0f, 0.0f);
+        App::Print(300, 350, "Close the window to restart.", 1.0f, 1.0f, 1.0f);
+    }
+
+    myUI->Render(activeNPC, playerInventory);
 }
 
 void Shutdown() {
-	delete rosamund;
-	delete granny;
-	delete randy;
-	delete alertIcon;
-
-	delete myCrowdManager;
-	delete myPlayer;
-	delete myUI;
-	delete myLevel;
-	delete myRooftop;
-	delete myPatroller;
-	delete myMainMenu;
-	delete myIntro;
+    delete rosamund;
+    delete granny;
+    delete randy;
+    delete alertIcon;
+    delete g_clock;
+    delete myCrowdManager;
+    delete myPlayer;
+    delete myUI;
+    delete myLevel;
+    delete myRooftop;
+    delete myPatroller;
+    delete myMainMenu;
+    delete myIntro;
 }

@@ -30,7 +30,7 @@ private:
     CSimpleSprite* m_player_icon_flashdrive_small;
     CSimpleSprite* m_player_icon_picture_small;
     CSimpleSprite* m_ui_cursor;
-    CSimpleSprite* m_player_inventory_screen_title;
+    CSimpleSprite*  m_player_inventory_screen_title;
 
     float m_diceTimer;
     int m_goldAmount = 0;

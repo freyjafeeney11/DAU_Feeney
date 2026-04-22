@@ -27,9 +27,6 @@ UIManager::UIManager() {
         m_playerSlotCoords[i][1] = coords[i][1];
     }
 
-    m_overlay_sprite = App::CreateSprite(".\\TestData\\overlay.png", 1, 1);
-    m_overlay_sprite->SetPosition(500.0f, 400.0f);
-
     m_dice_roll = App::CreateSprite(".\\TestData\\dice_roll.png", 5, 1);
     m_dice_roll->SetPosition(946.0f, 277.0f);
     m_dice_roll->SetScale(0.1f);
@@ -40,13 +37,13 @@ UIManager::UIManager() {
     m_inventory_screen->SetPosition(500.0f, 400.0f);
     m_inventory_screen->SetScale(0.6f);
 
-    m_player_inventory_screen_title = App::CreateSprite(".\\TestData\\inventory_title.png", 1, 1);
-    m_player_inventory_screen_title->SetPosition(500.0f, 400.0f);
-    m_player_inventory_screen_title->SetScale(0.6f);
-
     m_player_inventory_screen = App::CreateSprite(".\\TestData\\Inventory.png", 1, 1);
     m_player_inventory_screen->SetPosition(500.0f, 400.0f);
     m_player_inventory_screen->SetScale(0.6f);
+
+    m_player_inventory_screen_title = App::CreateSprite(".\\TestData\\inventory_title.png", 1, 1);
+    m_player_inventory_screen_title->SetPosition(500.0f, 400.0f);
+    m_player_inventory_screen_title->SetScale(0.6f);
 
     m_player_watch_sprite = App::CreateSprite(".\\TestData\\watch.png", 1, 1);
     m_player_watch_sprite->SetPosition(700.0f, 520.0f);
@@ -117,7 +114,6 @@ UIManager::~UIManager() {
     delete m_icon_letter;
     delete m_icon_picture;
     delete m_ui_cursor;
-    delete m_overlay_sprite;
     delete m_player_inventory_screen_title;
 }
 
@@ -172,7 +168,7 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
 
     float dt = deltaTime / 1000.0f;
 
-    if (App::IsKeyPressed(VK_BACK)) {
+    if (App::IsKeyPressed(VK_ESCAPE)) {
         CloseUI();
         return;
     }
@@ -246,9 +242,6 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
 }
 
 void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
-    if (IsAnyUIOpen()) {
-        m_overlay_sprite->Draw();
-    }
     if (m_playerInventoryOpen && !inPickpocketUI) {
         m_player_inventory_screen->Draw();
         m_player_inventory_screen_title->Draw();
@@ -262,7 +255,7 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
         char goldText[32];
         sprintf(goldText, "%d", m_goldAmount);
         m_icon_gold_small_hud->Draw();
-        App::Print(920, 423, goldText, 1.0f, 1.0f, 1.0f);
+        App::Print(930, 423, goldText, 1.0f, 1.0f, 1.0f);
     }
 
     if (!inPickpocketUI) return;
