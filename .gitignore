@@ -1,4 +1,5 @@
 -e ".vs/\nbin/\nobj/" 
 .vs
 x64/Release
+x64/Debug
 GameTest/x64/Release
