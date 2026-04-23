@@ -23,6 +23,7 @@ public:
     Player();
     ~Player();
     bool IsHiding() const { return m_isHiding; }
+    void SetColor(float r, float g, float b) { m_sprite->SetColor(r, g, b); }
     void Update(float deltaTime);
     void SetPosition(float x, float y);
     void Render(float camX, float camY, bool hidden);

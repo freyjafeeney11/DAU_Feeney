@@ -35,6 +35,7 @@ public:
     void Render(float camX, float camY);
 
     bool IsPlayerCaught()   const { return m_playerCaught; }
+    void Reset() { m_playerCaught = false; m_state = PATROLLER_INACTIVE; m_sprite->SetPosition(-300.0f, 300.0f); }
     bool IsInactive()       const { return m_state == PATROLLER_INACTIVE; }
     PatrollerState GetState() const { return m_state; }
 };

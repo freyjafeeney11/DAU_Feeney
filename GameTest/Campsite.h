@@ -32,6 +32,10 @@ private:
     CSimpleSprite* m_icon_letter;
     CSimpleSprite* m_icon_flashdrive;
     CSimpleSprite* m_icon_picture;
+    CSimpleSprite* m_icon_rat;
+    CSimpleSprite* m_icon_collar;
+    CSimpleSprite* m_icon_bouquet;
+    CSimpleSprite* m_icon_painting;
 
     float m_cloudOffset;
     bool  m_playerInTentZone;

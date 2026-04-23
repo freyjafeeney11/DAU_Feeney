@@ -1,7 +1,10 @@
 #include "stdafx.h"
 #include "NPC.h"
 
-NPC::NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* npcLoot, float startX, float startY, float scale) {
+NPC::NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* npcLoot,
+    float startX, float startY, float scale,
+    int sheetCols, int sheetRows, int animRow, int animFrameCount)
+{
     m_name = npcName;
     m_difficulty = npcDifficulty;
     m_isAlerted = false;
@@ -10,10 +13,16 @@ NPC::NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* np
         m_lootTable[i] = GenerateItem(npcLoot[i]);
     }
 
-    m_sprite = App::CreateSprite(spritePath, 4, 1);
+    m_sprite = App::CreateSprite(spritePath, sheetCols, sheetRows);
     m_sprite->SetPosition(startX, startY);
     m_sprite->SetScale(scale);
-    m_sprite->CreateAnimation(0, 0.4f, { 0,1,2,3,4 });
+
+    std::vector<int> frames;
+    int startFrame = animRow * sheetCols;
+    for (int i = 0; i < animFrameCount; i++) {
+        frames.push_back(startFrame + i);
+    }
+    m_sprite->CreateAnimation(0, 0.4f, frames);
     m_sprite->SetAnimation(0);
     m_alertTimer = 0.0f;
 }

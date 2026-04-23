@@ -29,6 +29,10 @@ Level::Level() {
     m_roamingNPC->SetAnimation(0);
     m_roamingNPC->SetPosition(-200.0f, -200.0f);
 
+    m_dialogueBox = App::CreateSprite(".\\TestData\\dialogue.png", 1, 1);
+    m_dialogueBox->SetPosition(500.0f, 980.0f);
+    m_dialogueBox->SetScale(0.6f);
+
     m_npcActive = false;
     m_npcTimer = 0.0f;
     m_npcSpawnDelay = 3.0f;
@@ -43,11 +47,20 @@ Level::Level() {
     m_ladderSprite->SetPosition(LADDER_WORLD_X, LADDER_WORLD_Y);
 
     m_cityScrollOffset = 0.0f;
+
+    // --- Ticketmaster setup ---
+    m_currentCar = 1;
+    m_guardState = GuardState::NONE;
+    m_guardChoice = 0;
+    m_enterWasDown = false;
+    m_navDown = false;
+    m_msgTimer = 0.0f;
 }
 
 Level::~Level() {
     delete m_background;
     delete m_city;
+    delete m_dialogueBox;
     delete m_window;
     delete m_rain;
     delete m_roamingNPC;
@@ -82,12 +95,97 @@ void Level::Update(float deltaTime) {
         m_roamingNPC->SetPosition(x, y);
         m_roamingNPC->SetFlipX(!m_npcMoveRight);
 
-        if (x > 2000.0f || x < -200.0f) {
-            m_npcActive = false;
-            m_npcTimer = 0.0f;
-            m_roamingNPC->SetPosition(-200.0f, -200.0f);
-        }
+        if (x > GUARD_WORLD_X + 50.0f && m_npcMoveRight)  m_npcMoveRight = false;
+        if (x < 50.0f && !m_npcMoveRight) m_npcMoveRight = true;
+
         m_roamingNPC->Update(deltaTime);
+    }
+}
+
+bool Level::IsPlayerNearGuard(float px) const {
+    return fabsf(px - (GUARD_WORLD_X + 200.0f)) < 120.0f;
+}
+
+void Level::UpdateGuard(float playerX, int& playerGold, bool& outChangeCar, float deltaTime) {
+    if (m_currentCar >= 3) return; // no guard in the final car
+
+    float dt = deltaTime / 1000.0f;
+    bool enterDown = App::IsKeyPressed(VK_RETURN);
+    bool escDown = App::IsKeyPressed(VK_ESCAPE);
+
+    if (m_guardState == GuardState::NO_FUNDS) {
+        m_msgTimer += dt;
+        if (m_msgTimer >= 2.0f || escDown) {
+            m_guardState = GuardState::NONE;
+        }
+        return;
+    }
+
+    if (m_guardState == GuardState::NONE) {
+        if (IsPlayerNearGuard(playerX) && enterDown && !m_enterWasDown) {
+            m_guardState = GuardState::PROMPT;
+            m_guardChoice = 0;
+            m_navDown = false;
+        }
+    }
+    else if (m_guardState == GuardState::PROMPT) {
+        if (escDown) {
+            m_guardState = GuardState::NONE;
+        }
+        else {
+            if (!m_navDown) {
+                if (App::IsKeyPressed(VK_LEFT) || App::IsKeyPressed(VK_RIGHT)) {
+                    m_guardChoice = 1 - m_guardChoice;
+                    m_navDown = true;
+                }
+            }
+            if (!App::IsKeyPressed(VK_LEFT) && !App::IsKeyPressed(VK_RIGHT)) {
+                m_navDown = false;
+            }
+
+            if (enterDown && !m_enterWasDown) {
+                if (m_guardChoice == 0) {
+                    if (playerGold >= 10) {
+                        playerGold -= 10;
+                        outChangeCar = true;
+                        m_currentCar++;
+                        m_guardState = GuardState::NONE;
+                    }
+                    else {
+                        m_guardState = GuardState::NO_FUNDS;
+                        m_msgTimer = 0.0f;
+                    }
+                }
+                else {
+                    m_guardState = GuardState::NONE;
+                }
+            }
+        }
+    }
+    m_enterWasDown = enterDown;
+}
+
+void Level::RenderGuardUI() {
+    if (m_guardState == GuardState::NONE) return;
+
+    m_dialogueBox->Draw();
+
+    if (m_guardState == GuardState::NO_FUNDS) {
+        App::Print(169, 710, "You don't have enough gold!", 1.0f, 0.4f, 0.4f);
+        return;
+    }
+
+    // dialogue text pos
+    if (m_guardState == GuardState::PROMPT) {
+        App::Print(169, 730, "Ticketmaster: Ticket for the next car is 10 gold.", 1.0f, 1.0f, 1.0f);
+        App::Print(169, 705, "Pay 10 Gold?", 1.0f, 1.0f, 0.0f);
+
+        float yesR = (m_guardChoice == 0) ? 1.0f : 0.5f;
+        float noR = (m_guardChoice == 1) ? 1.0f : 0.5f;
+        App::Print(179, 680, "YES", yesR, yesR, 0.0f);
+        App::Print(240, 680, "NO", noR, noR, noR);
+        float cursorX = (m_guardChoice == 0) ? 165.0f : 226.0f;
+        App::Print(cursorX, 680, ">", 1.0f, 1.0f, 0.0f);
     }
 }
 
@@ -124,10 +222,12 @@ void Level::RenderForeground(float camX, float camY) {
         m_roamingNPC->SetPosition(actualX, actualY);
     }
 
-    const float guardScreenX = GUARD_WORLD_X - camX;
-    if (guardScreenX > -600.0f && guardScreenX < 1224.0f) {
-        m_guardSprite->SetPosition(guardScreenX, GUARD_WORLD_Y - camY);
-        m_guardSprite->Draw();
+    if (m_currentCar < 3) {
+        const float guardScreenX = GUARD_WORLD_X - camX;
+        if (guardScreenX > -600.0f && guardScreenX < 1224.0f) {
+            m_guardSprite->SetPosition(guardScreenX, GUARD_WORLD_Y - camY);
+            m_guardSprite->Draw();
+        }
     }
 
     const float ladderScreenX = LADDER_WORLD_X - camX;

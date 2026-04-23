@@ -14,7 +14,9 @@ private:
     static constexpr float ALERT_DURATION = 30.0f;
 
 public:
-    NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* npcLoot, float startX, float startY, float scale = 0.2f);
+    NPC(const char* spritePath, const char* npcName, int npcDifficulty, int* npcLoot,
+        float startX, float startY, float scale = 0.2f,
+        int sheetCols = 4, int sheetRows = 1, int animRow = 0, int animFrameCount = 5);    
     ~NPC();
 
     void Update(float deltaTime);

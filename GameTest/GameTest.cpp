@@ -16,8 +16,27 @@
 #include "Intro.h"
 #include "App\SimpleSound.h"
 #include "GameClock.h"
+#include "PauseMenu.h"
+#include "CaughtMenu.h"
 
 #define SKIP_INTRO true
+
+enum class SceneState {
+    MAIN_MENU,
+    INTRO,
+    TRAIN_INTERIOR,
+    ROOFTOP
+};
+
+// pause menu stuff
+bool g_isPaused = false;
+bool g_escWasDown = false;
+PauseMenu* myPauseMenu;
+
+// end menu
+CaughtMenu* myCaughtMenu;
+float g_caughtAnimTimer = 0.0f;
+static constexpr float CAUGHT_ANIM_DURATION = 0.6f;
 
 SceneState g_scene = SKIP_INTRO ? SceneState::TRAIN_INTERIOR : SceneState::MAIN_MENU;
 bool g_nearLadder = false;
@@ -47,8 +66,13 @@ std::vector<NPC*> allNPCs;
 NPC* activeNPC = nullptr;
 
 int rosamundLoot[6] = { ITEM_GOLD, ITEM_LETTER,    ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
-int grannyLoot[6] = { ITEM_GOLD, ITEM_PICTURE,   ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+int grannyLoot[6] = { ITEM_GOLD, ITEM_BOOK,   ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 int randyLoot[6] = { ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+
+int heleneLoot[6] = { ITEM_GOLD, ITEM_COLLAR, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+int magdaLoot[6] = { ITEM_GOLD, ITEM_RAT, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+int lupineLoot[6] = { ITEM_GOLD, ITEM_PAINTING, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
+int charlesLoot[6] = { ITEM_GOLD, ITEM_BOUQUET, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
 
 NPC* rosamund;
 NPC* granny;
@@ -91,28 +115,45 @@ bool IsPlayerNearLadder() {
     myPlayer->GetPosition(px, py);
     return fabsf(px - myLevel->GetLadderX()) < 120.0f;
 }
+void LoadCar(int carNumber) {
+    for (NPC* npc : allNPCs) {
+        delete npc;
+    }
+    allNPCs.clear();
+    activeNPC = nullptr;
+
+    if (carNumber == 1) {
+        allNPCs.push_back(new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 790.0f, 330.0f, 0.19f));
+        allNPCs.push_back(new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1750.0f, 310.0f, 0.16f));
+        allNPCs.push_back(new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 320.0f, 330.0f, 0.2f));
+    }
+    else if (carNumber == 2) {
+        allNPCs.push_back(new NPC(".\\TestData\\npc_sprites.png", "Helene", 10, heleneLoot, 400.0f, 330.0f, 0.2f, 2, 4, 0, 2));
+        allNPCs.push_back(new NPC(".\\TestData\\npc_sprites.png", "Magda", 12, magdaLoot, 900.0f, 330.0f, 0.2f, 2, 4, 1, 2));
+        allNPCs.push_back(new NPC(".\\TestData\\npc_sprites.png", "Charles", 13, charlesLoot, 1900.0f, 330.0f, 0.2f, 2, 4, 3, 2));
+    }
+    else if (carNumber == 3) {
+        allNPCs.push_back(new NPC(".\\TestData\\npc_sprites.png", "Lupine", 17, lupineLoot, 1400.0f, 330.0f, 0.2f, 2, 4, 2, 2));
+    }
+
+    myPlayer->SetPosition(200.0f, 250.0f);
+    g_camera.x = 0.0f;
+}
+
 
 void Init() {
     App::PlaySound(".\\TestData\\audio\\jazz.wav", DSBPLAY_LOOPING);
     App::PlaySound(".\\TestData\\audio\\train_sounds.wav", DSBPLAY_LOOPING);
     App::PlaySound(".\\TestData\\audio\\rain.wav", DSBPLAY_LOOPING);
-
     App::PlaySound(".\\TestData\\goldsteal.wav", true);
 
+    myCaughtMenu = new CaughtMenu();
+    myPauseMenu = new PauseMenu();
     myPatroller = new Patroller();
     srand((unsigned int)time(nullptr));
-
     alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
     alertIcon->SetScale(0.1f);
     g_clock = new GameClock();
-    rosamund = new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 700.0f, 330.0f, 0.19f);
-    granny = new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1620.0f, 320.0f, 0.16f);
-    randy = new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 250.0f, 330.0f, 0.2f);
-
-    allNPCs.push_back(rosamund);
-    allNPCs.push_back(granny);
-    allNPCs.push_back(randy);
-
     myCrowdManager = new CrowdManager();
     myPlayer = new Player();
     myUI = new UIManager();
@@ -120,10 +161,14 @@ void Init() {
     myRooftop = new Rooftop();
     myMainMenu = new MainMenu();
     myIntro = new Intro();
+    // load the first car ! move this to own class eventually ?
+    LoadCar(1);
 }
 
+// UPDATE!! ***********************************************************************
 void Update(float deltaTime) {
 
+    // main menu
     if (g_scene == SceneState::MAIN_MENU) {
         myMainMenu->Update(deltaTime);
         if (myMainMenu->ShouldStart()) {
@@ -132,6 +177,7 @@ void Update(float deltaTime) {
         return;
     }
 
+    // intro
     if (g_scene == SceneState::INTRO) {
         myIntro->Update(deltaTime);
         if (myIntro->IsDone()) {
@@ -140,6 +186,21 @@ void Update(float deltaTime) {
         return;
     }
 
+    // pause menu logic
+    bool escDown = App::IsKeyPressed(VK_ESCAPE);
+    if (escDown && !g_escWasDown) {
+        // prevent double opening pause and ui
+        if (!myUI->IsAnyUIOpen() && !myRooftop->IsTrading()) {
+            g_isPaused = !g_isPaused;
+        }
+    }
+    g_escWasDown = escDown;
+    if (g_isPaused) {
+        myPauseMenu->Update(g_isPaused);
+        return;
+    }
+
+    // rooftop
     if (g_scene == SceneState::ROOFTOP) {
         g_clock->Update(deltaTime);
         float px, py;
@@ -149,7 +210,6 @@ void Update(float deltaTime) {
 
         if (myRooftop->JustSlept()) {
             g_clock->AdvanceToMorning();
-            // Removed the teleport! Player will wake up where they slept.
         }
 
         g_nearHatch = myRooftop->IsPlayerNearHatch(px);
@@ -165,64 +225,102 @@ void Update(float deltaTime) {
     }
 
     g_clock->Update(deltaTime);
-    if (myPatroller->IsPlayerCaught()) return;
+    
+    if (myPatroller->IsPlayerCaught()) {
+        g_caughtAnimTimer += deltaTime / 1000.0f;
 
-    myUI->Update(deltaTime, activeNPC, playerInventory);
+        if (g_caughtAnimTimer < CAUGHT_ANIM_DURATION) {
+            float flash = fmodf(g_caughtAnimTimer, 0.2f) < 0.1f ? 1.0f : 0.3f;
+            myPlayer->SetColor(1.0f, flash * 0.45f, flash * 0.45f);
 
-    if (!myUI->IsAnyUIOpen()) {
-
-        float px, py;
-        myPlayer->GetPosition(px, py);
-
-        g_camera.x = px - 512.0f;
-        if (g_camera.x < 0.0f) g_camera.x = 0.0f;
-
-        bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding();
-        myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
-
-        myLevel->Update(deltaTime);
-        myCrowdManager->Update(deltaTime);
-        myPlayer->Update(deltaTime);
-
-        rosamund->Update(deltaTime);
-        randy->Update(deltaTime);
-        granny->Update(deltaTime);
-
-        g_nearLadder = IsPlayerNearLadder() && !myUI->inPickpocketUI;
-        if (g_nearLadder && App::IsKeyPressed(VK_UP)) {
-            myPlayer->SetPosition(myRooftop->GetSpawnX(), myRooftop->GetSpawnY());
-            g_scene = SceneState::ROOFTOP;
+            // camera shake? or should i do sprite shake
+            float shake = sinf(g_caughtAnimTimer * 40.0f) * 9.0f;
+            g_camera.x += shake;
             return;
         }
 
-        bool nearNPC = IsPlayerNearNPC();
+        myPlayer->SetColor(1.0f, 1.0f, 1.0f);
+        bool retry = false;
+        myCaughtMenu->Update(retry);
+        if (retry) {
+            myPatroller->Reset();
+            g_caughtAnimTimer = 0.0f;
+            LoadCar(1);
+        }
+        return;
+    }
 
-        if (nearNPC && !myUI->inPickpocketUI) {
-            if (activeNPC && activeNPC->GetIsAlerted()) {
-                App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
-                if (myPatroller->IsInactive()) {
-                    myPatroller->Activate();
-                }
-            }
-            else {
-                if (App::IsKeyPressed(VK_RETURN)) {
-                    myUI->OpenUI();
-                }
-            }
+    myUI->Update(deltaTime, activeNPC, playerInventory);
+    if (!myUI->IsAnyUIOpen()) {
+        float px, py;
+        myPlayer->GetPosition(px, py);
+
+        // ticketman logic
+        bool changeCar = false;
+        int currentGold = myUI->GetGoldAmount();
+        myLevel->UpdateGuard(px, currentGold, changeCar, deltaTime);
+        myUI->SetGoldAmount(currentGold);
+
+        if (changeCar) {
+            int nextCar = myLevel->GetCurrentCar();
+            LoadCar(nextCar);
+            myPlayer->GetPosition(px, py);
         }
 
-        if (!nearNPC && myUI->inPickpocketUI) {
-            myUI->CloseUI();
+        if (!myLevel->IsGuardUIOpen()) {
+            g_camera.x = px - 512.0f;
+            if (g_camera.x < 0.0f) g_camera.x = 0.0f;
+            if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
+
+            bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding();
+            myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
+            myLevel->Update(deltaTime);
+            myCrowdManager->Update(deltaTime);
+            myPlayer->Update(deltaTime);
+
+            for (NPC* npc : allNPCs) {
+                npc->Update(deltaTime);
+            }
+
+            g_nearLadder = IsPlayerNearLadder() && !myUI->inPickpocketUI;
+            if (g_nearLadder && App::IsKeyPressed(VK_UP)) {
+                myPlayer->SetPosition(myRooftop->GetSpawnX(), myRooftop->GetSpawnY());
+                g_scene = SceneState::ROOFTOP;
+                return;
+            }
+
+            bool nearNPC = IsPlayerNearNPC();
+
+            if (nearNPC && !myUI->inPickpocketUI) {
+                if (activeNPC && activeNPC->GetIsAlerted()) {
+                    App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
+                    if (myPatroller->IsInactive()) {
+                        myPatroller->Activate();
+                    }
+                }
+                else {
+                    if (App::IsKeyPressed(VK_RETURN)) {
+                        myUI->OpenUI();
+                    }
+                }
+            }
+
+            if (!nearNPC && myUI->inPickpocketUI) {
+                myUI->CloseUI();
+            }
+
+            myUI->Update(deltaTime, activeNPC, playerInventory);
+
+            g_camera.x = px - 512.0f;
+            if (g_camera.x < 0.0f) g_camera.x = 0.0f;
+            if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
+            if (px > 3225.0f) myPlayer->SetPosition(3225.0f, py);
+
         }
-
-        myUI->Update(deltaTime, activeNPC, playerInventory);
-
-        g_camera.x = px - 512.0f;
-        if (g_camera.x < 0.0f) g_camera.x = 0.0f;
-        if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
-        if (px > 3225.0f) myPlayer->SetPosition(3225.0f, py);
     }
 }
+
+// RENDER!! *************************************************************************
 
 void Render() {
     if (g_scene == SceneState::MAIN_MENU) {
@@ -242,7 +340,6 @@ void Render() {
             myPlayer->Render(0.0f, 0.0f, false);
         }
 
-        // Apply the same fade to the text overlays
         float fade = myRooftop->GetFadeBrightness();
         char timeBuf[32];
         sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
@@ -255,6 +352,9 @@ void Render() {
         myRooftop->RenderPlant();
         myRooftop->RenderTradeUI(playerInventory);
 
+        if (g_isPaused) {
+            myPauseMenu->Render();
+        }
         return;
     }
 
@@ -293,18 +393,30 @@ void Render() {
 
     myLevel->RenderForeground(g_camera.x, g_camera.y);
 
+    // new ticketman logic
+    myLevel->RenderGuardUI();
+    myPlayer->GetPosition(px, py);
+    if (myLevel->IsPlayerNearGuard(px) && !myLevel->IsGuardUIOpen()) {
+        App::Print(10, 60, "Press Enter to speak to the Ticketman", 1.0f, 1.0f, 0.0f);
+    }
+
     if (myPatroller->IsPlayerCaught()) {
-        App::Print(350, 400, "You got caught!", 1.0f, 0.0f, 0.0f);
-        App::Print(300, 350, "Close the window to restart.", 1.0f, 1.0f, 1.0f);
+        if (g_caughtAnimTimer < CAUGHT_ANIM_DURATION) {
+            myPlayer->Render(g_camera.x, g_camera.y, false);
+        }
+        else {
+            myCaughtMenu->Render();
+        }
+        return;
     }
 
     myUI->Render(activeNPC, playerInventory);
+    if (g_isPaused) {
+        myPauseMenu->Render();
+    }
 }
 
 void Shutdown() {
-    delete rosamund;
-    delete granny;
-    delete randy;
     delete alertIcon;
     delete g_clock;
     delete myCrowdManager;
@@ -315,4 +427,8 @@ void Shutdown() {
     delete myPatroller;
     delete myMainMenu;
     delete myIntro;
+    delete myPauseMenu;
+    delete myCaughtMenu;
+    for (NPC* npc : allNPCs) delete npc;
+    allNPCs.clear();
 }

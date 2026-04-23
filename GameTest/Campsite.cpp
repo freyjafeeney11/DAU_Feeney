@@ -58,11 +58,15 @@ Rooftop::Rooftop() {
     m_watch_base->SetScale(0.12f);
 
     m_ui_cursor = App::CreateSprite(".\\TestData\\mask_temp.png", 1, 1);
-    m_ui_cursor->SetScale(0.4f);
+    m_ui_cursor->SetScale(0.06f);
 
     m_icon_letter = App::CreateSprite(".\\TestData\\letter_icon_cropped.png", 1, 1);
     m_icon_flashdrive = App::CreateSprite(".\\TestData\\flashdrive_icon_cropped.png", 1, 1);
     m_icon_picture = App::CreateSprite(".\\TestData\\picture_icon_cropped.png", 1, 1);
+    m_icon_rat = App::CreateSprite(".\\TestData\\rat_icon.png", 1, 1);
+    m_icon_collar = App::CreateSprite(".\\TestData\\collar_icon.png", 1, 1);
+    m_icon_bouquet = App::CreateSprite(".\\TestData\\bouquet_icon.png", 1, 1);
+    m_icon_painting = App::CreateSprite(".\\TestData\\painting_icon.png", 1, 1);
 
     m_watch_sprite = nullptr;
 
@@ -118,7 +122,12 @@ void Rooftop::DrawItemIcon(int itemId, float x, float y) {
     CSimpleSprite* spriteToDraw = nullptr;
     if (itemId == ITEM_LETTER) spriteToDraw = m_icon_letter;
     else if (itemId == ITEM_FLASHDRIVE) spriteToDraw = m_icon_flashdrive;
-    else if (itemId == ITEM_PICTURE) spriteToDraw = m_icon_picture;
+    else if (itemId == ITEM_BOOK) spriteToDraw = m_icon_picture;
+    else if (itemId == ITEM_RAT) spriteToDraw = m_icon_rat;
+    else if (itemId == ITEM_BOOK) spriteToDraw = m_icon_picture;
+    else if (itemId == ITEM_PAINTING) spriteToDraw = m_icon_painting;
+    else if (itemId == ITEM_COLLAR) spriteToDraw = m_icon_collar;
+    else if (itemId == ITEM_BOUQUET) spriteToDraw = m_icon_bouquet;
 
     if (spriteToDraw) {
         spriteToDraw->SetPosition(x, y);
