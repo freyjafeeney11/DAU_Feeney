@@ -9,6 +9,7 @@ private:
     bool m_enterDown;
     CSimpleSprite* m_background;
     CSimpleSprite* m_dim;
+    CSimpleSprite* m_text;
 
 public:
     PauseMenu();

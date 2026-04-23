@@ -36,6 +36,7 @@ private:
     CSimpleSprite* m_icon_collar;
     CSimpleSprite* m_icon_bouquet;
     CSimpleSprite* m_icon_painting;
+    CSimpleSprite* m_dialogue_bg;
 
     float m_cloudOffset;
     bool  m_playerInTentZone;

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Campsite.h"
 #include <math.h>
+#include "GearManager.h"
 #include <cstdio>
 
 Rooftop::Rooftop() {
@@ -44,6 +45,10 @@ Rooftop::Rooftop() {
     m_campfire->SetScale(0.77f);
     m_campfire->CreateAnimation(0, 0.1f, { 0, 1, 2, 3, 4 });
     m_campfire->SetAnimation(0);
+
+    m_dialogue_bg = App::CreateSprite(".\\TestData\\dialogue.png", 1, 1);
+    m_dialogue_bg->SetPosition(500.0f, 550.0f);
+    m_dialogue_bg->SetScale(0.7f);
 
     m_trade_inventory_screen = App::CreateSprite(".\\TestData\\Inventory.png", 1, 1);
     m_trade_inventory_screen->SetPosition(500.0f, 400.0f);
@@ -98,6 +103,7 @@ Rooftop::~Rooftop() {
     delete m_tentsleep;
     delete m_plant;
     delete m_campfire;
+    delete m_dialogue_bg;
     delete m_trade_inventory_screen;
     delete m_inventory_title;
     delete m_watch_base;
@@ -280,15 +286,8 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
                     int invIndex = tradeable[m_selectedItemIndex];
                     playerInventory.erase(playerInventory.begin() + invIndex);
                     m_gearCount++;
+                    GearManager::GetInstance().AddGear();
                     m_justTraded = true;
-
-                    if (m_watch_sprite) delete m_watch_sprite;
-                    char spritePath[64];
-                    sprintf(spritePath, ".\\TestData\\watch_phase_%d.png", m_gearCount);
-                    m_watch_sprite = App::CreateSprite(spritePath, 1, 1);
-
-                    m_watch_sprite->SetPosition(700.0f, 520.0f);
-                    m_watch_sprite->SetScale(0.12f);
 
                     m_tradeState = TradeState::COMPLETE;
                     m_completeTimer = 0.0f;
@@ -377,18 +376,24 @@ void Rooftop::Render(bool isDay) {
 void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
     if (m_tradeState == TradeState::NONE || m_tradeState == TradeState::SLEEP_TRANSITION) return;
 
-    m_trade_inventory_screen->Draw();
-    m_inventory_title->Draw();
-    m_watch_base->Draw();
+    if (m_tradeState == TradeState::PROMPT || m_tradeState == TradeState::COMPLETE) {
+        m_dialogue_bg->Draw();
+    }
+    else if (m_tradeState == TradeState::SELECTING || m_tradeState == TradeState::CONFIRMING) {
+        m_trade_inventory_screen->Draw();
+        m_inventory_title->Draw();
+        m_watch_base->Draw();
 
-    if (m_watch_sprite) {
-        m_watch_sprite->SetPosition(700.0f, 520.0f);
-        m_watch_sprite->SetScale(0.12f);
-        m_watch_sprite->Draw();
+        if (m_watch_sprite) {
+            m_watch_sprite->SetPosition(700.0f, 520.0f);
+            m_watch_sprite->SetScale(0.12f);
+            m_watch_sprite->Draw();
+        }
+        GearManager::GetInstance().RenderUI(700.0f, 520.0f);
     }
 
     if (m_tradeState == TradeState::COMPLETE) {
-        App::PrintTTF(150, 280, "A deal is struck! Sleep well...", 1.0f, 0.9f, 0.4f, 0);
+        App::PrintTTF(150, 280, "A deal is struck! Sleep well...", 1.0f, 1.0f, 1.0f, 0);
         return;
     }
 
@@ -396,10 +401,11 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
         App::PrintTTF(150, 310, "The goblin eyes your pockets...", 1.0f, 1.0f, 0.0f, 1);
         App::PrintTTF(150, 280, "Care to make a deal, or head to sleep?", 1.0f, 1.0f, 1.0f, 0);
 
-        float tradeR = (m_promptChoice == 0) ? 1.0f : 0.4f;
-        float sleepR = (m_promptChoice == 1) ? 1.0f : 0.4f;
-        App::PrintTTF(250, 220, "TRADE", tradeR, (m_promptChoice == 0) ? 0.9f : 0.4f, 0.0f, 0);
-        App::PrintTTF(400, 220, "SLEEP", sleepR, (m_promptChoice == 1) ? 0.9f : 0.4f, 0.0f, 0);
+        float tradeB = (m_promptChoice == 0) ? 0.0f : 1.0f;
+        float sleepB = (m_promptChoice == 1) ? 0.0f : 1.0f;
+
+        App::PrintTTF(250, 220, "TRADE", 1.0f, 1.0f, tradeB, 0);
+        App::PrintTTF(400, 220, "SLEEP", 1.0f, 1.0f, sleepB, 0);
         return;
     }
 
@@ -414,7 +420,7 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
         }
 
         if (tradeable.empty()) {
-            App::Print(150, 310, "You have nothing to trade.", 0.5f, 0.5f, 0.5f, 0);
+            App::Print(150, 310, "You have nothing to trade.", 1.0f, 1.0f, 1.0f, 0);
             return;
         }
 
@@ -422,18 +428,21 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
         m_ui_cursor->Draw();
 
         const Item& item = playerInventory[tradeable[m_selectedItemIndex]];
-        App::Print(120, 310, item.name.c_str(), 1.0f, 1.0f, 0.0f, 0);
-        App::Print(120, 280, item.flavorText.c_str(), 1.0f, 1.0f, 1.0f, 0);
+
+        // floating text, not sure if i want
+        App::PrintTTF(SLOT_X[m_selectedItemIndex] - 30.0f, SLOT_Y[m_selectedItemIndex] + 50.0f, item.name.c_str(), 1.0f, 1.0f, 0.0f, 0);
+
+        // changed
+        App::PrintTTF(120, 310, item.name.c_str(), 1.0f, 1.0f, 0.0f, 0);
+        App::PrintTTF(120, 280, item.flavorText.c_str(), 1.0f, 1.0f, 1.0f, 0);
 
         if (m_tradeState == TradeState::CONFIRMING) {
-            char line[128];
-            sprintf(line, "Give \"%s\" to the goblin?", item.name.c_str());
-            App::PrintTTF(120, 220, line, 1.0f, 0.5f, 0.0f, 0);
+            App::PrintTTF(120, 220, "Give this to the goblin?", 1.0f, 1.0f, 1.0f, 0);
+            float yesB = (m_confirmChoice == 0) ? 0.0f : 1.0f;
+            float noB = (m_confirmChoice == 1) ? 0.0f : 1.0f;
 
-            float yesR = (m_confirmChoice == 0) ? 1.0f : 0.4f;
-            float noR = (m_confirmChoice == 1) ? 1.0f : 0.4f;
-            App::PrintTTF(300, 180, "YES", yesR, (m_confirmChoice == 0) ? 0.9f : 0.4f, 0.0f, 0);
-            App::PrintTTF(400, 180, "NO", noR, 0.4f, 0.4f, 0);
+            App::PrintTTF(300, 180, "YES", 1.0f, 1.0f, yesB, 0);
+            App::PrintTTF(400, 180, "NO", 1.0f, 1.0f, noB, 0);
         }
     }
 }

@@ -32,6 +32,7 @@ private:
     CSimpleSprite* m_helene_inv_sprite;
     CSimpleSprite* m_magda_inv_sprite;
     CSimpleSprite* m_lupine_inv_sprite;
+    CSimpleSprite* m_overlay;
 
     float m_diceTimer;
     float m_failureTimer;

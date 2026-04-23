@@ -21,6 +21,10 @@
 
 #define SKIP_INTRO true
 
+// things to fix
+// not deleting saved stuff between "Retry"
+// ladder draws ontop of clock ui
+
 enum class SceneState {
     MAIN_MENU,
     INTRO,
@@ -354,11 +358,11 @@ void Render() {
         if (!myRooftop->IsSleeping()) {
             myPlayer->Render(0.0f, 0.0f, false);
         }
-
+        g_clock->Render();
         float fade = myRooftop->GetFadeBrightness();
         char timeBuf[32];
         sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-        App::PrintTTF(820, 720, timeBuf, fade, fade, fade, 1);
+        App::PrintTTF(805, 735, timeBuf, fade, fade, fade, 1);
 
         if (g_nearHatch && !myRooftop->IsTrading() && !myRooftop->IsSleeping()) {
             App::PrintTTF(10, 60, "Press Down to climb back down", fade, fade, 0.0f, 0);
@@ -374,9 +378,12 @@ void Render() {
     }
 
     myLevel->RenderBackground(g_camera.x);
+    g_clock->Render();
     char timeBuf[32];
     sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-    App::PrintTTF(820, 720, timeBuf, 1.0f, 1.0f, 1.0f, 1);
+    App::PrintTTF(805, 735, timeBuf, 1.0f, 1.0f, 1.0f, 1);
+
+
     if (activeNPC && !myUI->inPickpocketUI) {
         App::PrintTTF(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f, 0);
     }

@@ -22,9 +22,9 @@ private:
     static constexpr float TYPE_SPEED = 0.015f;
 
     const char* m_lines[4] = {
-        "Welcome aboard young one.. I've hypnotized the conductor with my special clock!",
-        "As you can see, we are now rolling towards a very unfortunate fate...",
-        "And look.. my clock has broken!",
+        "Welcome aboard young one.. I have hypnotized the conductor with my special clock!",
+        "We are now rolling towards a very unfortunate fate...",
+        "And look.. my clock has broken into seven pieces!",
         "If you want to save everyone you must recover the gears.. by bringing me gossip!!"
     };
 

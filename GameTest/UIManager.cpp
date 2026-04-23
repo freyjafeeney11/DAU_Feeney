@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "UIManager.h"
+#include "GearManager.h"
 
 UIManager::UIManager() {
     m_playerInventoryOpen    = false;
@@ -41,6 +42,10 @@ UIManager::UIManager() {
     m_player_inventory_screen = App::CreateSprite(".\\TestData\\Inventory.png", 1, 1);
     m_player_inventory_screen->SetPosition(500.0f, 400.0f);
     m_player_inventory_screen->SetScale(0.6f);
+
+    m_overlay = App::CreateSprite(".\\TestData\\overlay.png", 1, 1);
+    m_overlay->SetPosition(500.0f, 400.0f);
+    m_overlay->SetScale(0.6f);
 
     m_player_inventory_screen_title = App::CreateSprite(".\\TestData\\inventory_title.png", 1, 1);
     m_player_inventory_screen_title->SetPosition(500.0f, 400.0f);
@@ -109,7 +114,7 @@ UIManager::UIManager() {
     m_icon_painting->SetScale(0.6f);
 
     m_ui_cursor = App::CreateSprite(".\\TestData\\mask_temp.png", 1, 1);
-    m_ui_cursor->SetScale(0.06f);
+    m_ui_cursor->SetScale(0.05f);
 }
 
 UIManager::~UIManager() {
@@ -131,6 +136,7 @@ UIManager::~UIManager() {
     delete m_icon_rat;
     delete m_icon_painting;
     delete m_ui_cursor;
+    delete m_overlay;
 }
 
 void UIManager::DrawItemIcon(int itemId, float x, float y) {
@@ -262,7 +268,7 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
     if (m_playerInventoryOpen && !inPickpocketUI) {
         m_player_inventory_screen->Draw();
         m_player_inventory_screen_title->Draw();
-        m_player_watch_sprite->Draw();
+        GearManager::GetInstance().RenderUI(700.0f, 520.0f);
 
         int maxSlots = (int)playerInventory.size() < 6 ? (int)playerInventory.size() : 6;
         for (int i = 0; i < maxSlots; i++) {
@@ -276,7 +282,7 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
     }
 
     if (!inPickpocketUI) return;
-
+    m_overlay->Draw();
     m_inventory_screen->Draw();
 
     if (activeNPC) {
