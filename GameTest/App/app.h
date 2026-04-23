@@ -19,6 +19,7 @@
 //---------------------------------------------------------------------------------
 namespace App
 {
+	void InitFont(const char* fontPath, float pixelHeight);
 	//*******************************************************************************************
 	// Display Calls.
 	//*******************************************************************************************
@@ -107,5 +108,7 @@ namespace App
 	// See SimpleController.h for more info.
 	//-------------------------------------------------------------------------------------------
 	const CController &GetController( int pad = 0 );
+
+	void PrintTTF(float x, float y, const char* text, float r, float g, float b);
 };
 #endif //_APP_H

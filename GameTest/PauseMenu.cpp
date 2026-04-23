@@ -2,9 +2,9 @@
 #include "PauseMenu.h"
 
 PauseMenu::PauseMenu() {
-    m_background = App::CreateSprite(".\\TestData\\ui_Screen.png", 1, 1);
+    m_background = App::CreateSprite(".\\TestData\\ui_screen.png", 1, 1);
     m_background->SetPosition(512.0f, 512.0f);
-    m_background->SetScale(0.75f);
+    m_background->SetScale(0.4f);
 
     m_dim = App::CreateSprite(".\\TestData\\overlay.png", 1, 1);
     m_choice = 0;
@@ -48,14 +48,14 @@ void PauseMenu::Render() {
     m_dim->SetPosition(512.0f, 512.0f);
     m_dim->Draw();
     m_background->Draw();
-    App::Print(470, 440, "PAUSED", 1.0f, 1.0f, 1.0f);
+    App::PrintTTF(470, 480, "PAUSED", 1.0f, 1.0f, 1.0f);
 
     float resumeR = (m_choice == 0) ? 1.0f : 0.5f;
     float quitR = (m_choice == 1) ? 1.0f : 0.5f;
 
-    App::Print(470, 410.0f, "Resume", resumeR, resumeR, resumeR);
-    App::Print(470, 380.0f, "Quit", quitR, quitR, quitR);
+    App::PrintTTF(470, 450.0f, "Resume", resumeR, resumeR, resumeR);
+    App::PrintTTF(470, 420.0f, "Quit", quitR, quitR, quitR);
 
-    float cursorY = (m_choice == 0) ? 410.0f : 380.0f;
-    App::Print(440, cursorY, ">", 1.0f, 1.0f, 0.0f);
+    float cursorY = (m_choice == 0) ? 450.0f : 420.0f;
+    App::PrintTTF(440, cursorY, ">", 1.0f, 1.0f, 0.0f);
 }

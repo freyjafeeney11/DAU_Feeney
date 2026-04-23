@@ -14,8 +14,77 @@
 //---------------------------------------------------------------------------------
 // Utils and externals for system info.
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
+static GLuint       g_fontTexture = 0;
+static stbtt_bakedchar g_charData[96];
+static float        g_fontScale = 1.0f;
+
+
 namespace App
-{	
+{
+	void InitFont(const char* fontPath, float pixelHeight) {
+		FILE* f = fopen(fontPath, "rb");
+		if (!f) return;
+		fseek(f, 0, SEEK_END);
+		long size = ftell(f);
+		fseek(f, 0, SEEK_SET);
+		unsigned char* buf = new unsigned char[size];
+		fread(buf, 1, size, f);
+		fclose(f);
+
+		unsigned char bitmap[512 * 512];
+		stbtt_BakeFontBitmap(buf, 0, pixelHeight, bitmap, 512, 512, 32, 96, g_charData);
+		delete[] buf;
+
+		glGenTextures(1, &g_fontTexture);
+		glBindTexture(GL_TEXTURE_2D, g_fontTexture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512, 512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+
+	void PrintTTF(float x, float y, const char* text, float r, float g, float b) {
+		float nx = x, ny = y;
+#if APP_USE_VIRTUAL_RES
+		APP_VIRTUAL_TO_NATIVE_COORDS(nx, ny);
+#endif
+		// scale pixel offsets from stb down to native GL coord space
+		const float scaleX = 2.0f / WINDOW_WIDTH;
+		const float scaleY = 2.0f / WINDOW_HEIGHT;
+
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBindTexture(GL_TEXTURE_2D, g_fontTexture);
+		glColor3f(r, g, b);
+		glBegin(GL_QUADS);
+
+		float cx = 0.0f, cy = 0.0f; // stb tracks advance in pixel space from 0
+		while (*text) {
+			if (*text >= 32 && *text < 128) {
+				stbtt_aligned_quad q;
+				stbtt_GetBakedQuad(g_charData, 512, 512, *text - 32, &cx, &cy, &q, 1);
+
+				float vx0 = nx + q.x0 * scaleX;
+				float vx1 = nx + q.x1 * scaleX;
+				float vy0 = ny - q.y0 * scaleY;
+				float vy1 = ny - q.y1 * scaleY;
+
+				glTexCoord2f(q.s0, q.t1); glVertex2f(vx0, vy1);
+				glTexCoord2f(q.s1, q.t1); glVertex2f(vx1, vy1);
+				glTexCoord2f(q.s1, q.t0); glVertex2f(vx1, vy0);
+				glTexCoord2f(q.s0, q.t0); glVertex2f(vx0, vy0);
+			}
+			text++;
+		}
+
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+	}
+
 	void DrawLine(float sx, float sy, float ex, float ey, float r, float g, float b)
 	{
 #if APP_USE_VIRTUAL_RES		
@@ -69,6 +138,7 @@ namespace App
 	// This prints a string to the screen
 	void Print(float x, float y, const char *st, float r, float g, float b, void *font)
 	{
+
 #if APP_USE_VIRTUAL_RES		
 		APP_VIRTUAL_TO_NATIVE_COORDS(x, y);
 #endif		
@@ -85,4 +155,5 @@ namespace App
 	{
 		return CSimpleControllers::GetInstance().GetController(pad);
 	}
+
 }

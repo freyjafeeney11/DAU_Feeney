@@ -163,6 +163,8 @@ void Init() {
     myIntro = new Intro();
     // load the first car ! move this to own class eventually ?
     LoadCar(1);
+
+    App::InitFont(".\\TestData\\fonts\\UncialAntiqua-Regular.ttf", 24.0f);
 }
 
 // UPDATE!! ***********************************************************************
@@ -293,7 +295,7 @@ void Update(float deltaTime) {
 
             if (nearNPC && !myUI->inPickpocketUI) {
                 if (activeNPC && activeNPC->GetIsAlerted()) {
-                    App::Print(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
+                    App::PrintTTF(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
                     if (myPatroller->IsInactive()) {
                         myPatroller->Activate();
                     }
@@ -343,10 +345,10 @@ void Render() {
         float fade = myRooftop->GetFadeBrightness();
         char timeBuf[32];
         sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-        App::Print(820, 720, timeBuf, fade, fade, fade);
+        App::PrintTTF(820, 720, timeBuf, fade, fade, fade);
 
         if (g_nearHatch && !myRooftop->IsTrading() && !myRooftop->IsSleeping()) {
-            App::Print(10, 60, "Press Down to climb back down", fade, fade, 0.0f);
+            App::PrintTTF(10, 60, "Press Down to climb back down", fade, fade, 0.0f);
         }
 
         myRooftop->RenderPlant();
@@ -361,13 +363,13 @@ void Render() {
     myLevel->RenderBackground(g_camera.x);
     char timeBuf[32];
     sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-    App::Print(820, 720, timeBuf, 1.0f, 1.0f, 1.0f);
+    App::PrintTTF(820, 720, timeBuf, 1.0f, 1.0f, 1.0f);
     if (activeNPC && !myUI->inPickpocketUI) {
-        App::Print(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f);
+        App::PrintTTF(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f);
     }
 
     if (g_nearLadder) {
-        App::Print(10, 60, "Press Up to climb the ladder", 1.0f, 1.0f, 0.0f);
+        App::PrintTTF(10, 60, "Press Up to climb the ladder", 1.0f, 1.0f, 0.0f);
     }
 
     myCrowdManager->Render(g_camera.x, g_camera.y);
@@ -397,7 +399,7 @@ void Render() {
     myLevel->RenderGuardUI();
     myPlayer->GetPosition(px, py);
     if (myLevel->IsPlayerNearGuard(px) && !myLevel->IsGuardUIOpen()) {
-        App::Print(10, 60, "Press Enter to speak to the Ticketman", 1.0f, 1.0f, 0.0f);
+        App::PrintTTF(10, 60, "Press Enter to speak to the Ticketman", 1.0f, 1.0f, 0.0f);
     }
 
     if (myPatroller->IsPlayerCaught()) {

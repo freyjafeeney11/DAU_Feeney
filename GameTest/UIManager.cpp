@@ -272,7 +272,7 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
         char goldText[32];
         sprintf(goldText, "%d", m_goldAmount);
         m_icon_gold_small_hud->Draw();
-        App::Print(930, 423, goldText, 1.0f, 1.0f, 1.0f);
+        App::PrintTTF(930, 423, goldText, 1.0f, 1.0f, 1.0f);
     }
 
     if (!inPickpocketUI) return;
@@ -300,8 +300,8 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
 
         Item& selected = currentTable[m_currentSlot];
         if (selected.id != ITEM_NONE) {
-            App::Print(120, 310, selected.name.c_str(),       1.0f, 1.0f, 0.0f);
-            App::Print(120, 280, selected.flavorText.c_str(), 1.0f, 1.0f, 1.0f);
+            App::PrintTTF(120, 310, selected.name.c_str(),       1.0f, 1.0f, 0.0f);
+            App::PrintTTF(120, 280, selected.flavorText.c_str(), 1.0f, 1.0f, 1.0f);
         }
     }
 
@@ -310,8 +310,8 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
         if (m_diceLanded) {
             char res[32];
             sprintf(res, "%d", m_lastDiceRoll);
-            App::Print(925, 275, res, 0.0f, 0.0f, 0.0f);
-            App::Print(890, 190,
+            App::PrintTTF(925, 275, res, 0.0f, 0.0f, 0.0f);
+            App::PrintTTF(890, 190,
                 m_lastStealSuccess ? "Success!" : "Failure",
                 m_lastStealSuccess ? 0.0f : 1.0f,
                 m_lastStealSuccess ? 1.0f : 0.0f, 0.0f);
