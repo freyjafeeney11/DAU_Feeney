@@ -10,7 +10,6 @@ CaughtMenu::CaughtMenu() {
     m_choice = 0;
     m_navDown = false;
     m_enterDown = false;
-    App::InitFont(".\\TestData\\fonts\\UncialAntiqua-Regular.ttf", 30.0f);
 }
 
 CaughtMenu::~CaughtMenu() {
@@ -40,7 +39,7 @@ void CaughtMenu::Render() {
     m_dim->Draw();
     m_background->Draw();
 
-    App::PrintTTF(385, 465, "YOU GOT CAUGHT!", 1.0f, 0.2f, 0.2f);
+    App::PrintTTF(400, 465, "YOU GOT CAUGHT!", 1.0f, 0.2f, 0.2f, 1);
 
     float retryR = (m_choice == 0) ? 1.0f : 0.45f;
     float quitR = (m_choice == 1) ? 1.0f : 0.45f;

@@ -84,6 +84,7 @@ Rooftop::Rooftop() {
     m_navKeyDown = false;
     m_tradeEnterDown = false;
     m_completeTimer = 0.0f;
+    m_showDayMessage = false;
 }
 
 Rooftop::~Rooftop() {
@@ -145,7 +146,7 @@ float Rooftop::GetFadeBrightness() const {
     return 1.0f;
 }
 
-void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerInventory) {
+void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerInventory, bool isNight) {
     float dt = deltaTime / 1000.0f;
 
     m_cloudOffset += CLOUD_SPEED * dt;
@@ -179,11 +180,21 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
     bool backDown = App::IsKeyPressed(VK_BACK);
 
     if (m_tradeState == TradeState::NONE) {
+        if (!m_playerInTentZone) {
+            m_showDayMessage = false;
+        }
+
         if (m_playerInTentZone && enterDown && !m_enterWasDown) {
-            m_tradeState = TradeState::PROMPT;
-            m_promptChoice = 0;
-            m_navKeyDown = false;
-            m_tradeEnterDown = true;
+            if (!isNight) {
+                m_tradeState = TradeState::PROMPT;
+                m_promptChoice = 0;
+                m_navKeyDown = false;
+                m_tradeEnterDown = true;
+                m_showDayMessage = false;
+            }
+            else {
+                m_showDayMessage = true;
+            }
         }
     }
     else if (m_tradeState == TradeState::PROMPT) {
@@ -273,7 +284,7 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
 
                     if (m_watch_sprite) delete m_watch_sprite;
                     char spritePath[64];
-                    sprintf(spritePath, ".\\TestData\\watch_phase (%d).png", m_gearCount);
+                    sprintf(spritePath, ".\\TestData\\watch_phase_%d.png", m_gearCount);
                     m_watch_sprite = App::CreateSprite(spritePath, 1, 1);
 
                     m_watch_sprite->SetPosition(700.0f, 520.0f);
@@ -343,11 +354,23 @@ void Rooftop::Render(bool isDay) {
         m_tentsleep->Draw();
     }
 
-    m_goblin->SetColor(b, b, b);
-    m_goblin->Draw();
+    if (!isDay) {
+        m_goblin->SetColor(b, b, b);
+        m_goblin->Draw();
+    }
 
     if (m_playerInTentZone && m_tradeState == TradeState::NONE) {
-        App::Print(750, 150, "Press Enter to trade or sleep", 1.0f, 1.0f, 1.0f);
+        if (isDay) {
+            if (m_showDayMessage) {
+                App::PrintTTF(750, 150, "You can only sleep at night.", 1.0f, 0.5f, 0.5f, 0);
+            }
+            else {
+                App::PrintTTF(750, 150, "The goblin is out...", 0.8f, 0.8f, 0.8f, 0);
+            }
+        }
+        else {
+            App::PrintTTF(750, 150, "Press Enter to trade or sleep", 1.0f, 1.0f, 1.0f, 0);
+        }
     }
 }
 
@@ -365,18 +388,18 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
     }
 
     if (m_tradeState == TradeState::COMPLETE) {
-        App::Print(150, 280, "A deal is struck! Sleep well...", 1.0f, 0.9f, 0.4f);
+        App::PrintTTF(150, 280, "A deal is struck! Sleep well...", 1.0f, 0.9f, 0.4f, 0);
         return;
     }
 
     if (m_tradeState == TradeState::PROMPT) {
-        App::Print(150, 310, "The goblin eyes your pockets...", 1.0f, 1.0f, 0.0f);
-        App::Print(150, 280, "Care to make a deal, or head to sleep?", 1.0f, 1.0f, 1.0f);
+        App::PrintTTF(150, 310, "The goblin eyes your pockets...", 1.0f, 1.0f, 0.0f, 1);
+        App::PrintTTF(150, 280, "Care to make a deal, or head to sleep?", 1.0f, 1.0f, 1.0f, 0);
 
         float tradeR = (m_promptChoice == 0) ? 1.0f : 0.4f;
         float sleepR = (m_promptChoice == 1) ? 1.0f : 0.4f;
-        App::Print(250, 220, "TRADE", tradeR, (m_promptChoice == 0) ? 0.9f : 0.4f, 0.0f);
-        App::Print(400, 220, "SLEEP", sleepR, (m_promptChoice == 1) ? 0.9f : 0.4f, 0.0f);
+        App::PrintTTF(250, 220, "TRADE", tradeR, (m_promptChoice == 0) ? 0.9f : 0.4f, 0.0f, 0);
+        App::PrintTTF(400, 220, "SLEEP", sleepR, (m_promptChoice == 1) ? 0.9f : 0.4f, 0.0f, 0);
         return;
     }
 
@@ -391,7 +414,7 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
         }
 
         if (tradeable.empty()) {
-            App::Print(150, 310, "You have nothing to trade.", 0.5f, 0.5f, 0.5f);
+            App::Print(150, 310, "You have nothing to trade.", 0.5f, 0.5f, 0.5f, 0);
             return;
         }
 
@@ -399,18 +422,18 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
         m_ui_cursor->Draw();
 
         const Item& item = playerInventory[tradeable[m_selectedItemIndex]];
-        App::Print(120, 310, item.name.c_str(), 1.0f, 1.0f, 0.0f);
-        App::Print(120, 280, item.flavorText.c_str(), 1.0f, 1.0f, 1.0f);
+        App::Print(120, 310, item.name.c_str(), 1.0f, 1.0f, 0.0f, 0);
+        App::Print(120, 280, item.flavorText.c_str(), 1.0f, 1.0f, 1.0f, 0);
 
         if (m_tradeState == TradeState::CONFIRMING) {
             char line[128];
             sprintf(line, "Give \"%s\" to the goblin?", item.name.c_str());
-            App::Print(120, 220, line, 1.0f, 0.5f, 0.0f);
+            App::PrintTTF(120, 220, line, 1.0f, 0.5f, 0.0f, 0);
 
             float yesR = (m_confirmChoice == 0) ? 1.0f : 0.4f;
             float noR = (m_confirmChoice == 1) ? 1.0f : 0.4f;
-            App::Print(300, 180, "YES", yesR, (m_confirmChoice == 0) ? 0.9f : 0.4f, 0.0f);
-            App::Print(400, 180, "NO", noR, 0.4f, 0.4f);
+            App::PrintTTF(300, 180, "YES", yesR, (m_confirmChoice == 0) ? 0.9f : 0.4f, 0.0f, 0);
+            App::PrintTTF(400, 180, "NO", noR, 0.4f, 0.4f, 0);
         }
     }
 }

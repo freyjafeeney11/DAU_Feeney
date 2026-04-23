@@ -84,11 +84,9 @@ void Intro::Render() {
     else if (m_currentSlide < 3) {
         m_slides[m_currentSlide]->Draw();
     }
-
-    // Dialogue box and typewriter text at top of screen
     m_dialogueBox->SetPosition(500.0f, 980.0f);
     m_dialogueBox->Draw();
-    App::Print(169, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f);
+    App::PrintTTF(169, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f, 0);
 }
 
 bool Intro::IsDone() const {

@@ -27,7 +27,8 @@ enum class SceneState {
     TRAIN_INTERIOR,
     ROOFTOP
 };
-
+// font stuff
+bool g_fontsLoaded = false;
 // pause menu stuff
 bool g_isPaused = false;
 bool g_escWasDown = false;
@@ -164,11 +165,23 @@ void Init() {
     // load the first car ! move this to own class eventually ?
     LoadCar(1);
 
-    App::InitFont(".\\TestData\\fonts\\UncialAntiqua-Regular.ttf", 24.0f);
+    // IMFellEnglish-Regular
+    // UncialAntiqua-Regular
+
+    //App::InitFont(".\\TestData\\IMFellEnglish-Regular.ttf", 18.0f, 0);  // dialogue = 0
+    //App::InitFont(".\\TestData\\UncialAntiqua-Regular.ttf", 28.0f, 1);  // titles = 1
 }
 
 // UPDATE!! ***********************************************************************
 void Update(float deltaTime) {
+
+    // load fonts
+
+    if (!g_fontsLoaded) {
+        App::InitFont(".\\TestData\\fonts\\IMFellEnglish-Regular.ttf", 24.0f, 0);
+        App::InitFont(".\\TestData\\fonts\\UncialAntiqua-Regular.ttf", 25.0f, 1);
+        g_fontsLoaded = true;
+    }
 
     // main menu
     if (g_scene == SceneState::MAIN_MENU) {
@@ -208,7 +221,7 @@ void Update(float deltaTime) {
         float px, py;
         myPlayer->GetPosition(px, py);
 
-        myRooftop->Update(deltaTime, px, playerInventory);
+        myRooftop->Update(deltaTime, px, playerInventory, g_clock->IsDay());
 
         if (myRooftop->JustSlept()) {
             g_clock->AdvanceToMorning();
@@ -345,10 +358,10 @@ void Render() {
         float fade = myRooftop->GetFadeBrightness();
         char timeBuf[32];
         sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-        App::PrintTTF(820, 720, timeBuf, fade, fade, fade);
+        App::PrintTTF(820, 720, timeBuf, fade, fade, fade, 1);
 
         if (g_nearHatch && !myRooftop->IsTrading() && !myRooftop->IsSleeping()) {
-            App::PrintTTF(10, 60, "Press Down to climb back down", fade, fade, 0.0f);
+            App::PrintTTF(10, 60, "Press Down to climb back down", fade, fade, 0.0f, 0);
         }
 
         myRooftop->RenderPlant();
@@ -363,13 +376,13 @@ void Render() {
     myLevel->RenderBackground(g_camera.x);
     char timeBuf[32];
     sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-    App::PrintTTF(820, 720, timeBuf, 1.0f, 1.0f, 1.0f);
+    App::PrintTTF(820, 720, timeBuf, 1.0f, 1.0f, 1.0f, 1);
     if (activeNPC && !myUI->inPickpocketUI) {
-        App::PrintTTF(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f);
+        App::PrintTTF(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f, 0);
     }
 
     if (g_nearLadder) {
-        App::PrintTTF(10, 60, "Press Up to climb the ladder", 1.0f, 1.0f, 0.0f);
+        App::PrintTTF(10, 60, "Press Up to climb the ladder", 1.0f, 1.0f, 0.0f, 0);
     }
 
     myCrowdManager->Render(g_camera.x, g_camera.y);
@@ -399,7 +412,7 @@ void Render() {
     myLevel->RenderGuardUI();
     myPlayer->GetPosition(px, py);
     if (myLevel->IsPlayerNearGuard(px) && !myLevel->IsGuardUIOpen()) {
-        App::PrintTTF(10, 60, "Press Enter to speak to the Ticketman", 1.0f, 1.0f, 0.0f);
+        App::PrintTTF(10, 60, "Press Enter to speak to the Ticketman", 1.0f, 1.0f, 0.0f, 0);
     }
 
     if (myPatroller->IsPlayerCaught()) {

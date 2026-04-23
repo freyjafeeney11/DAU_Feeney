@@ -19,7 +19,6 @@
 //---------------------------------------------------------------------------------
 namespace App
 {
-	void InitFont(const char* fontPath, float pixelHeight);
 	//*******************************************************************************************
 	// Display Calls.
 	//*******************************************************************************************
@@ -109,6 +108,7 @@ namespace App
 	//-------------------------------------------------------------------------------------------
 	const CController &GetController( int pad = 0 );
 
-	void PrintTTF(float x, float y, const char* text, float r, float g, float b);
+	void InitFont(const char* fontPath, float pixelHeight, int slot);
+	void PrintTTF(float x, float y, const char* text, float r, float g, float b, int slot = 0);
 };
 #endif //_APP_H

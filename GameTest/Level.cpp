@@ -171,21 +171,21 @@ void Level::RenderGuardUI() {
     m_dialogueBox->Draw();
 
     if (m_guardState == GuardState::NO_FUNDS) {
-        App::Print(169, 710, "You don't have enough gold!", 1.0f, 0.4f, 0.4f);
+        App::PrintTTF(169, 710, "You don't have enough gold!", 1.0f, 0.4f, 0.4f, 0);
         return;
     }
 
     // dialogue text pos
     if (m_guardState == GuardState::PROMPT) {
-        App::Print(169, 730, "Ticketmaster: Ticket for the next car is 10 gold.", 1.0f, 1.0f, 1.0f);
-        App::Print(169, 705, "Pay 10 Gold?", 1.0f, 1.0f, 0.0f);
+        App::PrintTTF(169, 730, "Ticketmaster: Ticket for the next car is 10 gold.", 1.0f, 1.0f, 1.0f, 0);
+        App::PrintTTF(169, 705, "Pay 10 Gold?", 1.0f, 1.0f, 0.0f, 1);
 
         float yesR = (m_guardChoice == 0) ? 1.0f : 0.5f;
         float noR = (m_guardChoice == 1) ? 1.0f : 0.5f;
-        App::Print(179, 680, "YES", yesR, yesR, 0.0f);
-        App::Print(240, 680, "NO", noR, noR, noR);
+        App::PrintTTF(179, 680, "YES", yesR, yesR, 0.0f, 1);
+        App::PrintTTF(240, 680, "NO", noR, noR, noR, 1);
         float cursorX = (m_guardChoice == 0) ? 165.0f : 226.0f;
-        App::Print(cursorX, 680, ">", 1.0f, 1.0f, 0.0f);
+        App::PrintTTF(cursorX, 680, ">", 1.0f, 1.0f, 0.0f, 0);
     }
 }
 

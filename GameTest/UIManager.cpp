@@ -36,7 +36,7 @@ UIManager::UIManager() {
 
     m_inventory_screen = App::CreateSprite(".\\TestData\\Inventory.png", 1, 1);
     m_inventory_screen->SetPosition(500.0f, 400.0f);
-    m_inventory_screen->SetScale(0.6f);
+    m_inventory_screen->SetScale(0.607f);
 
     m_player_inventory_screen = App::CreateSprite(".\\TestData\\Inventory.png", 1, 1);
     m_player_inventory_screen->SetPosition(500.0f, 400.0f);
@@ -272,7 +272,7 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
         char goldText[32];
         sprintf(goldText, "%d", m_goldAmount);
         m_icon_gold_small_hud->Draw();
-        App::PrintTTF(930, 423, goldText, 1.0f, 1.0f, 1.0f);
+        App::PrintTTF(930, 423, goldText, 1.0f, 1.0f, 1.0f, 0);
     }
 
     if (!inPickpocketUI) return;
@@ -280,13 +280,48 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
     m_inventory_screen->Draw();
 
     if (activeNPC) {
-        if      (activeNPC->GetName() == "Rosamund") m_rosamund_inv_sprite->Draw();
-        else if (activeNPC->GetName() == "Randy")    m_randy_inv_sprite->Draw();
-        else if (activeNPC->GetName() == "Granny")   m_granny_inv_sprite->Draw();
-        else if (activeNPC->GetName() == "Helene")   m_helene_inv_sprite->Draw();
-        else if (activeNPC->GetName() == "Lupine")   m_lupine_inv_sprite->Draw();
-        else if (activeNPC->GetName() == "Charles")   m_charles_inv_sprite->Draw();
-        else if (activeNPC->GetName() == "Magda")   m_magda_inv_sprite->Draw();
+        if (activeNPC->GetName() == "Rosamund") {
+            m_rosamund_inv_sprite->Draw();
+            App::PrintTTF(875, 620, "Rosamund", 1.0f, 1.0f, 1.0f, 1);
+            App::PrintTTF(885, 550, "Nurse", 1.0f, 1.0f, 1.0f, 0);
+            App::PrintTTF(885, 530, "34 y.o.", 1.0f, 1.0f, 1.0f, 0);
+        }
+        else if (activeNPC->GetName() == "Randy") {
+            m_randy_inv_sprite->Draw();
+            App::PrintTTF(875, 620, "Randy", 1.0f, 1.0f, 1.0f, 1);
+            App::PrintTTF(885, 550, "Engineer", 1.0f, 1.0f, 1.0f, 0);
+            App::PrintTTF(885, 530, "31 y.o.", 1.0f, 1.0f, 1.0f, 0);
+        }
+        else if (activeNPC->GetName() == "Granny") {
+            m_granny_inv_sprite->Draw();
+            App::PrintTTF(875, 620, "Granny", 1.0f, 1.0f, 1.0f, 1);
+            App::PrintTTF(885, 550, "Cat-Sitter", 1.0f, 1.0f, 1.0f, 0);
+            App::PrintTTF(885, 530, "84 y.o.", 1.0f, 1.0f, 1.0f, 0);
+        }
+        else if (activeNPC->GetName() == "Helene") {
+            m_helene_inv_sprite->Draw();
+            App::PrintTTF(875, 620, "Helene", 1.0f, 1.0f, 1.0f, 1);
+            App::PrintTTF(885, 550, "Diplomat", 1.0f, 1.0f, 1.0f, 0);
+            App::PrintTTF(885, 530, "41 y.o.", 1.0f, 1.0f, 1.0f, 0);
+        }
+        else if (activeNPC->GetName() == "Lupine") {
+            m_lupine_inv_sprite->Draw();
+            App::PrintTTF(875, 620, "Lupine", 1.0f, 1.0f, 1.0f, 1);
+            App::PrintTTF(885, 550, "Museum Curator", 1.0f, 1.0f, 1.0f, 0);
+            App::PrintTTF(885, 530, "27 y.o.", 1.0f, 1.0f, 1.0f, 0);
+        }
+        else if (activeNPC->GetName() == "Charles") {
+            m_charles_inv_sprite->Draw();
+            App::PrintTTF(875, 620, "Charles", 1.0f, 1.0f, 1.0f, 1);
+            App::PrintTTF(885, 550, "Business Man", 1.0f, 1.0f, 1.0f, 0);
+            App::PrintTTF(885, 530, "47 y.o.", 1.0f, 1.0f, 1.0f, 0);
+        }
+        else if (activeNPC->GetName() == "Magda") {
+            m_magda_inv_sprite->Draw();
+            App::PrintTTF(875, 620, "Magda", 1.0f, 1.0f, 1.0f, 1);
+            App::PrintTTF(885, 550, "Student", 1.0f, 1.0f, 1.0f, 0);
+            App::PrintTTF(885, 530, "19 y.o.", 1.0f, 1.0f, 1.0f, 0);
+        }
 
         Item* currentTable = activeNPC->GetLootTable();
         for (int i = 0; i < 6; i++) {
@@ -300,8 +335,8 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
 
         Item& selected = currentTable[m_currentSlot];
         if (selected.id != ITEM_NONE) {
-            App::PrintTTF(120, 310, selected.name.c_str(),       1.0f, 1.0f, 0.0f);
-            App::PrintTTF(120, 280, selected.flavorText.c_str(), 1.0f, 1.0f, 1.0f);
+            App::PrintTTF(120, 310, selected.name.c_str(),       1.0f, 1.0f, 0.0f, 1);
+            App::PrintTTF(120, 280, selected.flavorText.c_str(), 1.0f, 1.0f, 1.0f, 0);
         }
     }
 
@@ -310,11 +345,11 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
         if (m_diceLanded) {
             char res[32];
             sprintf(res, "%d", m_lastDiceRoll);
-            App::PrintTTF(925, 275, res, 0.0f, 0.0f, 0.0f);
+            App::PrintTTF(927, 275, res, 1.0f, 1.0f, 1.0f, 1);
             App::PrintTTF(890, 190,
                 m_lastStealSuccess ? "Success!" : "Failure",
                 m_lastStealSuccess ? 0.0f : 1.0f,
-                m_lastStealSuccess ? 1.0f : 0.0f, 0.0f);
+                m_lastStealSuccess ? 1.0f : 0.0f, 0.0f, 1);
         }
     }
 }

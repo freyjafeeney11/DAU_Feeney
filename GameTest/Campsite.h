@@ -52,6 +52,7 @@ private:
     bool  m_navKeyDown;
     bool  m_tradeEnterDown;
     float m_completeTimer;
+    bool m_showDayMessage;
 
     static constexpr float COMPLETE_DISPLAY_TIME = 1.5f;
     static constexpr float HATCH_X = 200.0f;
@@ -70,7 +71,7 @@ public:
     Rooftop();
     ~Rooftop();
 
-    void Update(float deltaTime, float playerX, std::vector<Item>& playerInventory);
+    void Update(float deltaTime, float playerX, std::vector<Item>& playerInventory, bool isNight);
     void Render(bool isDay);
     void RenderTradeUI(const std::vector<Item>& playerInventory);
     void RenderPlant();

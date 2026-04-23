@@ -17,14 +17,14 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-static GLuint       g_fontTexture = 0;
-static stbtt_bakedchar g_charData[96];
+static GLuint          g_fontTexture[2] = { 0, 0 };
+static stbtt_bakedchar g_charData[2][96];
 static float        g_fontScale = 1.0f;
 
 
 namespace App
 {
-	void InitFont(const char* fontPath, float pixelHeight) {
+	void InitFont(const char* fontPath, float pixelHeight, int slot) {
 		FILE* f = fopen(fontPath, "rb");
 		if (!f) return;
 		fseek(f, 0, SEEK_END);
@@ -35,17 +35,17 @@ namespace App
 		fclose(f);
 
 		unsigned char bitmap[512 * 512];
-		stbtt_BakeFontBitmap(buf, 0, pixelHeight, bitmap, 512, 512, 32, 96, g_charData);
+		stbtt_BakeFontBitmap(buf, 0, pixelHeight, bitmap, 512, 512, 32, 96, g_charData[slot]);
 		delete[] buf;
 
-		glGenTextures(1, &g_fontTexture);
-		glBindTexture(GL_TEXTURE_2D, g_fontTexture);
+		glGenTextures(1, &g_fontTexture[slot]);
+		glBindTexture(GL_TEXTURE_2D, g_fontTexture[slot]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512, 512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 
-	void PrintTTF(float x, float y, const char* text, float r, float g, float b) {
+	void PrintTTF(float x, float y, const char* text, float r, float g, float b, int slot) {
 		float nx = x, ny = y;
 #if APP_USE_VIRTUAL_RES
 		APP_VIRTUAL_TO_NATIVE_COORDS(nx, ny);
@@ -57,7 +57,7 @@ namespace App
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBindTexture(GL_TEXTURE_2D, g_fontTexture);
+		glBindTexture(GL_TEXTURE_2D, g_fontTexture[slot]);
 		glColor3f(r, g, b);
 		glBegin(GL_QUADS);
 
@@ -65,7 +65,7 @@ namespace App
 		while (*text) {
 			if (*text >= 32 && *text < 128) {
 				stbtt_aligned_quad q;
-				stbtt_GetBakedQuad(g_charData, 512, 512, *text - 32, &cx, &cy, &q, 1);
+				stbtt_GetBakedQuad(g_charData[slot], 512, 512, *text - 32, &cx, &cy, &q, 1);
 
 				float vx0 = nx + q.x0 * scaleX;
 				float vx1 = nx + q.x1 * scaleX;

@@ -48,14 +48,14 @@ void PauseMenu::Render() {
     m_dim->SetPosition(512.0f, 512.0f);
     m_dim->Draw();
     m_background->Draw();
-    App::PrintTTF(470, 480, "PAUSED", 1.0f, 1.0f, 1.0f);
+    App::PrintTTF(470, 680, "PAUSED", 1.0f, 1.0f, 1.0f, 1);
 
     float resumeR = (m_choice == 0) ? 1.0f : 0.5f;
     float quitR = (m_choice == 1) ? 1.0f : 0.5f;
 
-    App::PrintTTF(470, 450.0f, "Resume", resumeR, resumeR, resumeR);
-    App::PrintTTF(470, 420.0f, "Quit", quitR, quitR, quitR);
+    App::PrintTTF(470, 550.0f, "Resume", resumeR, resumeR, resumeR, 0);
+    App::PrintTTF(470, 520.0f, "Quit", quitR, quitR, quitR, 0);
 
-    float cursorY = (m_choice == 0) ? 450.0f : 420.0f;
+    float cursorY = (m_choice == 0) ? 550.0f : 520.0f;
     App::PrintTTF(440, cursorY, ">", 1.0f, 1.0f, 0.0f);
 }
