@@ -9,6 +9,7 @@ enum class GuardState {
 
 class Level {
 private:
+
     CSimpleSprite* m_city;
     CSimpleSprite* m_background;
     CSimpleSprite* m_window;
@@ -38,6 +39,8 @@ private:
     static constexpr float GUARD_WORLD_Y = 370.0f;
     static constexpr float LADDER_WORLD_X = 2750.0f;
     static constexpr float LADDER_WORLD_Y = 480.0f;
+    static constexpr float VISION_RANGE = 320.0f;
+    static constexpr float VISION_CONE_HALF = 0.7f;
 
 public:
     Level();
@@ -46,6 +49,10 @@ public:
     void Update(float deltaTime);
     void RenderBackground(float camX);
     void RenderForeground(float camX, float camY);
+
+    //walking npc scope
+    bool IsPlayerInWalkingNPCVision(float playerX, float playerY) const;
+    void RenderWalkingNPCVision(float camX, float camY) const;
 
     void UpdateGuard(float playerX, int& playerGold, bool& outChangeCar, float deltaTime);
     void RenderGuardUI();

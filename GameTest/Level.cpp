@@ -48,7 +48,7 @@ Level::Level() {
 
     m_cityScrollOffset = 0.0f;
 
-    // --- Ticketmaster setup ---
+    // ticketman
     m_currentCar = 1;
     m_guardState = GuardState::NONE;
     m_guardChoice = 0;
@@ -66,6 +66,54 @@ Level::~Level() {
     delete m_roamingNPC;
     delete m_guardSprite;
     delete m_ladderSprite;
+}
+
+bool Level::IsPlayerInWalkingNPCVision(float playerX, float playerY) const {
+    if (!m_npcActive) return false;
+    float nx, ny;
+    m_roamingNPC->GetPosition(nx, ny);
+    float dx = playerX - nx;
+    if (m_npcMoveRight && (dx < 0 || dx > VISION_RANGE)) return false;
+    if (!m_npcMoveRight && (dx > 0 || dx < -VISION_RANGE)) return false;
+    return true;
+}
+
+void Level::RenderWalkingNPCVision(float camX, float camY) const {
+    if (!m_npcActive) return;
+    float nx, ny;
+    m_roamingNPC->GetPosition(nx, ny);
+    float sx = nx - camX;
+    float sy = (ny + 150.0f) - camY;  // eye height?
+
+#if APP_USE_VIRTUAL_RES
+    APP_VIRTUAL_TO_NATIVE_COORDS(sx, sy);
+#endif
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
+
+    const int NUM_RAYS = 16;
+    const float forwardX = m_npcMoveRight ? 1.0f : -1.0f;
+    const float TILT_DOWN = 20.0f;  // how far down the cone points
+
+    glBegin(GL_TRIANGLE_FAN);
+    glColor4f(1.0f, 0.5f, 0.1f, 0.18f);
+    glVertex2f(sx, sy);
+
+    for (int i = 0; i <= NUM_RAYS; i++) {
+        float t = (float)i / NUM_RAYS;
+        float spread = (t - 0.5f) * 2.0f * VISION_CONE_HALF * VISION_RANGE;
+        float vx = nx - camX + forwardX * VISION_RANGE;
+        float vy = (ny + 150.0f) - camY + spread - TILT_DOWN;
+#if APP_USE_VIRTUAL_RES
+        APP_VIRTUAL_TO_NATIVE_COORDS(vx, vy);
+#endif
+        glVertex2f(vx, vy);
+    }
+
+    glEnd();
+    glDisable(GL_BLEND);
 }
 
 void Level::Update(float deltaTime) {

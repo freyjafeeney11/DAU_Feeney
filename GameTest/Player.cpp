@@ -6,7 +6,7 @@
 Player::Player() {
     m_isHiding = false;
     m_sprite = App::CreateSprite(".\\TestData\\sprite_sheet 9.png", 4, 4);
-    m_sprite->SetPosition(400.0f, 250.0f);
+    m_sprite->SetPosition(400.0f, 245.0f);
     m_hideSprite = App::CreateSprite(".\\TestData\\player_hide.png", 2, 1);
     m_hideSprite->SetPosition(400.0f, 250.0f);
     m_hideSprite->SetScale(0.2f);

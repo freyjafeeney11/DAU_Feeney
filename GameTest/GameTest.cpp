@@ -21,9 +21,13 @@
 
 #define SKIP_INTRO true
 
-// things to fix
+// things to fix immediate
+// fix music and adding other sounds, ex gold sound effect
 // not deleting saved stuff between "Retry"
 // ladder draws ontop of clock ui
+// hover above items with or show the difficulty of the roll needed
+// idea .. at the end scene, the goblin takes all of the items you traded and swirls them around in an animation and tells a story ? 
+// outro
 
 enum class SceneState {
     MAIN_MENU,
@@ -312,14 +316,19 @@ void Update(float deltaTime) {
 
             if (nearNPC && !myUI->inPickpocketUI) {
                 if (activeNPC && activeNPC->GetIsAlerted()) {
-                    App::PrintTTF(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f);
-                    if (myPatroller->IsInactive()) {
-                        myPatroller->Activate();
-                    }
+                    App::PrintTTF(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f, 0);
+                    if (myPatroller->IsInactive()) myPatroller->Activate();
                 }
                 else {
                     if (App::IsKeyPressed(VK_RETURN)) {
-                        myUI->OpenUI();
+                        if (myLevel->IsPlayerInWalkingNPCVision(px, py)) {
+                            // she saw you attempt to steal
+                            activeNPC->SetAlerted(true);
+                            if (myPatroller->IsInactive()) myPatroller->Activate();
+                        }
+                        else {
+                            myUI->OpenUI();
+                        }
                     }
                 }
             }
@@ -362,7 +371,7 @@ void Render() {
         float fade = myRooftop->GetFadeBrightness();
         char timeBuf[32];
         sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-        App::PrintTTF(805, 735, timeBuf, fade, fade, fade, 1);
+        App::PrintTTF(805, 730, timeBuf, fade, fade, fade, 1);
 
         if (g_nearHatch && !myRooftop->IsTrading() && !myRooftop->IsSleeping()) {
             App::PrintTTF(10, 60, "Press Down to climb back down", fade, fade, 0.0f, 0);
@@ -381,11 +390,11 @@ void Render() {
     g_clock->Render();
     char timeBuf[32];
     sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-    App::PrintTTF(805, 735, timeBuf, 1.0f, 1.0f, 1.0f, 1);
+    App::PrintTTF(805, 730, timeBuf, 1.0f, 1.0f, 1.0f, 1);
 
 
     if (activeNPC && !myUI->inPickpocketUI) {
-        App::PrintTTF(10, 100, "Press Enter to check their pockets...", 0.0f, 0.0f, 0.0f, 0);
+        App::PrintTTF(10, 60, "Press Enter to check their pockets...", 1.0f, 1.0f, 0.0f, 0);
     }
 
     if (g_nearLadder) {
@@ -408,12 +417,13 @@ void Render() {
     float px, py;
     myPlayer->GetPosition(px, py);
     bool inClump = myCrowdManager->IsPlayerInClump(px, py);
-    bool hidden = inClump && myPlayer->IsHiding();
+    bool hidden = inClump && myPlayer->IsHiding() && !(myLevel->IsPlayerInWalkingNPCVision(px, py));
     myPlayer->Render(g_camera.x, g_camera.y, hidden);
 
     myPatroller->Render(g_camera.x, g_camera.y);
 
     myLevel->RenderForeground(g_camera.x, g_camera.y);
+    myLevel->RenderWalkingNPCVision(g_camera.x, g_camera.y);
 
     // new ticketman logic
     myLevel->RenderGuardUI();

@@ -6,7 +6,7 @@
 // NATIVE has coords from -1.0f to 1.0f with 0.0f,0.0f as the center of the window.
 #define APP_USE_VIRTUAL_RES		true					// Set true to use virtual coords.					
 #define APP_VIRTUAL_WIDTH		(1024)					// This will be the effective x resolution regardless of actual screen/window res.
-#define APP_VIRTUAL_HEIGHT		(768)					// This will be the effective y resolution regardless of actual screen/window res.
+#define APP_VIRTUAL_HEIGHT		(765)					// This will be the effective y resolution regardless of actual screen/window res.
 
 #define APP_MAX_FRAME_RATE		(60.0f)					// Maximum update rate.
 #define APP_INIT_WINDOW_WIDTH	(APP_VIRTUAL_WIDTH)		// Initial window width.

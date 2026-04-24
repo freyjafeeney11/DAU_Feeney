@@ -19,8 +19,8 @@ UIManager::UIManager() {
     m_goldAmount             = 0;
 
     float coords[6][2] = {
-        { 190.0f, 600.0f }, { 310.0f, 600.0f }, { 450.0f, 600.0f },
-        { 190.0f, 450.0f }, { 310.0f, 450.0f }, { 450.0f, 450.0f }
+        { 180.0f, 600.0f }, { 310.0f, 600.0f }, { 450.0f, 600.0f },
+        { 180.0f, 450.0f }, { 310.0f, 450.0f }, { 450.0f, 450.0f }
     };
     for (int i = 0; i < 6; i++) {
         m_slotCoords[i][0]       = coords[i][0];
@@ -77,7 +77,7 @@ UIManager::UIManager() {
     m_charles_inv_sprite->SetScale(0.4f);
 
     m_helene_inv_sprite = App::CreateSprite(".\\TestData\\helene_portrait.png", 1, 1);
-    m_helene_inv_sprite->SetPosition(700.0f, 512.0f);
+    m_helene_inv_sprite->SetPosition(700.0f, 518.0f);
     m_helene_inv_sprite->SetScale(0.42f);
 
     m_lupine_inv_sprite = App::CreateSprite(".\\TestData\\lupine_portrait.png", 1, 1);
