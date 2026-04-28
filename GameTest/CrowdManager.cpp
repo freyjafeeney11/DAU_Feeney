@@ -22,7 +22,7 @@ CrowdManager::CrowdManager() : m_swayTime(0.0f) {
 
     for (int i = 0; i < ms_NUM_CLUMPS; i++) {
         m_crowdClumps[i].m_baseX = baseX + i * spacing;
-        m_crowdClumps[i].m_baseY = 410.0f;
+        m_crowdClumps[i].m_baseY = 420.0f;
         m_crowdClumps[i].m_swayOffset = GetRandomOffset(100) / 100.0f * 6.28f;
 
         for (int j = 0; j < ms_MEMBERS_PER_CLUMP; j++) {

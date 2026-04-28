@@ -4,7 +4,7 @@
 MainMenu::MainMenu() {
     m_background = App::CreateSprite(".\\TestData\\start_menu.png", 1, 1);
     m_background->SetPosition(512.0f, 400.0f);
-    m_background->SetScale(0.6f);
+    m_background->SetScale(0.5f);
 }
 
 MainMenu::~MainMenu() {

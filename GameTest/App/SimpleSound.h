@@ -41,11 +41,12 @@ public:
 	
 	bool PlaySound(const char *filename, DWORD flags = 0);
 	bool StopSound(const char *filename);
-	bool IsPlaying(const char *filename);
+	bool IsPlaying(const char *filename);	
+	bool SetVolume(const char* filename, float volume); // 0.0 = silent, 1.0 = max
+
 private:
 	bool InitializeDirectSound(HWND);
 	void ShutdownDirectSound();
-
 	bool LoadWaveFile(const char*);
 	
 private:

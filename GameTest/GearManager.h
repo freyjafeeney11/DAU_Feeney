@@ -15,6 +15,8 @@ public:
 
     // render
     void RenderUI(float x, float y);
+    // number of gears to finish
+    bool IsComplete() const { return m_gearCount >= 4; }
 
 private:
     GearManager();

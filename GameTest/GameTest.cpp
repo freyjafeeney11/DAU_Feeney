@@ -18,6 +18,8 @@
 #include "GameClock.h"
 #include "PauseMenu.h"
 #include "CaughtMenu.h"
+#include "GearManager.h"
+#include "Outro.h"
 
 #define SKIP_INTRO true
 
@@ -33,7 +35,8 @@ enum class SceneState {
     MAIN_MENU,
     INTRO,
     TRAIN_INTERIOR,
-    ROOFTOP
+    ROOFTOP,
+    OUTRO
 };
 // font stuff
 bool g_fontsLoaded = false;
@@ -41,6 +44,7 @@ bool g_fontsLoaded = false;
 bool g_isPaused = false;
 bool g_escWasDown = false;
 PauseMenu* myPauseMenu;
+Outro* myOutro = nullptr;
 
 // end menu
 CaughtMenu* myCaughtMenu;
@@ -97,7 +101,7 @@ void DrawAlertIconAboveNPC(NPC* npc) {
     t += 0.05f;
     float bob = sinf(t) * 4.0f;
 
-    alertIcon->SetPosition(x - g_camera.x, y + (worldHeight * 0.5f) + 10.0f + bob);
+    alertIcon->SetPosition(x - g_camera.x, y + (worldHeight * 0.5f) + 22.0f + bob);
     alertIcon->Draw();
 }
 
@@ -152,16 +156,20 @@ void LoadCar(int carNumber) {
 
 void Init() {
     App::PlaySound(".\\TestData\\audio\\jazz.wav", DSBPLAY_LOOPING);
+    App::SetSoundVolume(".\\TestData\\audio\\jazz.wav", 0.2f);  // quiet background music
+
     App::PlaySound(".\\TestData\\audio\\train_sounds.wav", DSBPLAY_LOOPING);
+    App::SetSoundVolume(".\\TestData\\audio\\train_sounds.wav", 0.7f);
+
     App::PlaySound(".\\TestData\\audio\\rain.wav", DSBPLAY_LOOPING);
-    App::PlaySound(".\\TestData\\goldsteal.wav", true);
+    App::SetSoundVolume(".\\TestData\\audio\\rain.wav", 0.6f);
 
     myCaughtMenu = new CaughtMenu();
     myPauseMenu = new PauseMenu();
     myPatroller = new Patroller();
     srand((unsigned int)time(nullptr));
     alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
-    alertIcon->SetScale(0.1f);
+    alertIcon->SetScale(0.2f);
     g_clock = new GameClock();
     myCrowdManager = new CrowdManager();
     myPlayer = new Player();
@@ -182,6 +190,16 @@ void Init() {
 
 // UPDATE!! ***********************************************************************
 void Update(float deltaTime) {
+    // check for outro
+    if (GearManager::GetInstance().IsComplete() && g_scene != SceneState::OUTRO) {
+        g_scene = SceneState::OUTRO;
+        if (!myOutro) myOutro = new Outro();
+    }
+
+    if (g_scene == SceneState::OUTRO) {
+        myOutro->Update(deltaTime);
+        return;
+    }
 
     // load fonts
 
@@ -268,6 +286,8 @@ void Update(float deltaTime) {
         if (retry) {
             myPatroller->Reset();
             g_caughtAnimTimer = 0.0f;
+            playerInventory.clear();
+            myUI->ResetGold();
             LoadCar(1);
         }
         return;
@@ -295,8 +315,19 @@ void Update(float deltaTime) {
             if (g_camera.x < 0.0f) g_camera.x = 0.0f;
             if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
 
-            bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding();
+            // gfetting caught criteria
+            bool inWalkingNPCVision = myLevel->IsPlayerInWalkingNPCVision(px, py);
+            bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding() && !inWalkingNPCVision;
+
+            bool isHiding = myPlayer->IsHiding();
+            App::SetSoundVolume(".\\TestData\\audio\\jazz.wav", isHiding ? 0.08f : 0.3f);
+            App::SetSoundVolume(".\\TestData\\audio\\train_sounds.wav", isHiding ? 0.1f : 0.5f);
+            App::SetSoundVolume(".\\TestData\\audio\\rain.wav", isHiding ? 0.1f : 0.4f);
+
             myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
+            if (myPatroller->IsInactive()) {
+                myLevel->SetNPCAlerted(false);
+            }
             myLevel->Update(deltaTime);
             myCrowdManager->Update(deltaTime);
             myPlayer->Update(deltaTime);
@@ -324,6 +355,8 @@ void Update(float deltaTime) {
                         if (myLevel->IsPlayerInWalkingNPCVision(px, py)) {
                             // she saw you attempt to steal
                             activeNPC->SetAlerted(true);
+                            // add exclamation 
+                            myLevel->SetNPCAlerted(true);
                             if (myPatroller->IsInactive()) myPatroller->Activate();
                         }
                         else {
@@ -351,6 +384,10 @@ void Update(float deltaTime) {
 // RENDER!! *************************************************************************
 
 void Render() {
+    if (g_scene == SceneState::OUTRO) {
+        myOutro->Render();
+        return;
+    }
     if (g_scene == SceneState::MAIN_MENU) {
         myMainMenu->Render();
         return;
@@ -387,10 +424,6 @@ void Render() {
     }
 
     myLevel->RenderBackground(g_camera.x);
-    g_clock->Render();
-    char timeBuf[32];
-    sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-    App::PrintTTF(805, 730, timeBuf, 1.0f, 1.0f, 1.0f, 1);
 
 
     if (activeNPC && !myUI->inPickpocketUI) {
@@ -422,8 +455,17 @@ void Render() {
 
     myPatroller->Render(g_camera.x, g_camera.y);
 
-    myLevel->RenderForeground(g_camera.x, g_camera.y);
-    myLevel->RenderWalkingNPCVision(g_camera.x, g_camera.y);
+
+    // new rendering bit with red cone
+    myPlayer->GetPosition(px, py);
+    bool isCollidingWithCone = myLevel->IsPlayerInWalkingNPCVision(px, py);
+    myLevel->RenderWalkingNPCVision(g_camera.x, g_camera.y, isCollidingWithCone);
+    myLevel->RenderForeground(g_camera.x, g_camera.y, isCollidingWithCone);
+
+    g_clock->Render();
+    char timeBuf[32];
+    sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
+    App::PrintTTF(805, 730, timeBuf, 1.0f, 1.0f, 1.0f, 1);
 
     // new ticketman logic
     myLevel->RenderGuardUI();
@@ -461,6 +503,7 @@ void Shutdown() {
     delete myIntro;
     delete myPauseMenu;
     delete myCaughtMenu;
+    delete myOutro;
     for (NPC* npc : allNPCs) delete npc;
     allNPCs.clear();
 }

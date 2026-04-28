@@ -4,7 +4,8 @@
 enum class GuardState {
     NONE,
     PROMPT,
-    NO_FUNDS
+    NO_FUNDS,
+    OUTRO
 };
 
 class Level {
@@ -42,17 +43,21 @@ private:
     static constexpr float VISION_RANGE = 320.0f;
     static constexpr float VISION_CONE_HALF = 0.7f;
 
+    // alert cone
+    CSimpleSprite* m_questionIcon;
+    CSimpleSprite* m_alertIcon;
+    bool m_npcAlerted;
+
 public:
     Level();
     ~Level();
 
     void Update(float deltaTime);
     void RenderBackground(float camX);
-    void RenderForeground(float camX, float camY);
+    void RenderForeground(float camX, float camY, bool isColliding);
 
     //walking npc scope
     bool IsPlayerInWalkingNPCVision(float playerX, float playerY) const;
-    void RenderWalkingNPCVision(float camX, float camY) const;
 
     void UpdateGuard(float playerX, int& playerGold, bool& outChangeCar, float deltaTime);
     void RenderGuardUI();
@@ -61,4 +66,7 @@ public:
     int GetCurrentCar() const { return m_currentCar; }
 
     float GetLadderX() const { return LADDER_WORLD_X; }
+
+    void SetNPCAlerted(bool alerted) { m_npcAlerted = alerted; }
+    void RenderWalkingNPCVision(float camX, float camY, bool isColliding) const;
 };

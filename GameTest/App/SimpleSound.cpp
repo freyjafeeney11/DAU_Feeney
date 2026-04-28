@@ -52,6 +52,14 @@ void CSimpleSound::Shutdown()
 	return;
 }
 
+bool CSimpleSound::SetVolume(const char* filename, float volume) {
+	if (m_sounds[filename] == nullptr) return false;
+	LONG db = (volume <= 0.0f) ? DSBVOLUME_MIN : (LONG)(2000.0f * log10f(volume));
+	if (db < DSBVOLUME_MIN) db = DSBVOLUME_MIN;
+	m_sounds[filename]->SetVolume(db);
+	return true;
+}
+
 bool CSimpleSound::InitializeDirectSound(HWND hwnd)
 {
 	HRESULT result;

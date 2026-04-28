@@ -50,8 +50,6 @@ private:
 
     float m_slotCoords[6][2];
     float m_playerSlotCoords[6][2];
-
-    int  ComputeGoldCount(const std::vector<Item>& playerInventory) const;
     void DrawItemIcon(int itemId, float x, float y);
 
 public:
@@ -64,6 +62,7 @@ public:
     void Render(NPC* activeNPC, std::vector<Item>& playerInventory);
     void OpenUI();
     void CloseUI();
+    void ResetGold() { m_goldAmount = 0; }
 
     bool IsAnyUIOpen()   const { return m_playerInventoryOpen || inPickpocketUI; }
     int  GetGoldAmount() const { return m_goldAmount; }

@@ -158,14 +158,6 @@ void UIManager::DrawItemIcon(int itemId, float x, float y) {
     }
 }
 
-int UIManager::ComputeGoldCount(const std::vector<Item>& playerInventory) const {
-    int total = 0;
-    for (const auto& item : playerInventory) {
-        if (item.id == ITEM_GOLD) total += 20;
-    }
-    return total;
-}
-
 void UIManager::OpenUI() {
     m_enterButtonDown = true;
     inPickpocketUI    = true;
@@ -243,7 +235,8 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
                 else {
                     playerInventory.push_back(std::move(currentTable[m_currentSlot]));
                 }
-                App::PlaySound(".\\TestData\\gold_steal.wav", false);
+                App::PlaySound(".\\TestData\\audio\\gold_steal.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\gold_steal.wav", 0.4f);
             }
             else {
                 m_lastStealSuccess = false;

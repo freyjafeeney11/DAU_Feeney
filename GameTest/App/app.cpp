@@ -24,6 +24,9 @@ static float        g_fontScale = 1.0f;
 
 namespace App
 {
+	void App::SetSoundVolume(const char* fileName, float volume) {
+		CSimpleSound::GetInstance().SetVolume(fileName, volume);
+	}
 	void InitFont(const char* fontPath, float pixelHeight, int slot) {
 		FILE* f = fopen(fontPath, "rb");
 		if (!f) return;
@@ -97,6 +100,7 @@ namespace App
 		glVertex2f(ex, ey);
 		glEnd();
 	}
+
 	
 	CSimpleSprite *CreateSprite(const char *fileName, int columns, int rows)
 	{
