@@ -11,7 +11,9 @@ enum PatrollerState {
 class Patroller {
 private:
     CSimpleSprite* m_sprite;
+    CSimpleSprite* m_questionIcon;
     PatrollerState m_state;
+    bool m_isHovering;
 
     float m_hideTimer;
     float m_outOfRangeTimer;
@@ -31,7 +33,7 @@ public:
     ~Patroller();
 
     void Activate();
-    void Update(float deltaTime, float playerX, float playerY, bool playerInClump, float camX);
+    void Update(float deltaTime, float playerX, float playerY, bool playerInClump, float camX, int heatLevel);
     void Render(float camX, float camY);
 
     bool IsPlayerCaught()   const { return m_playerCaught; }

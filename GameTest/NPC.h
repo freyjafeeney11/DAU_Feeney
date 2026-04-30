@@ -7,6 +7,12 @@ class NPC {
 private:
     CSimpleSprite* m_sprite;
     std::string m_name;
+    std::string m_thoughtText;
+    CSimpleSprite* m_bubbleSprite;
+    float m_thoughtTimer;
+    float m_thoughtDuration;
+    float m_thoughtCooldown;
+    bool m_showingThought;
     Item m_lootTable[6];
     int m_difficulty;
     bool m_isAlerted;
@@ -22,6 +28,7 @@ public:
     void Update(float deltaTime);
     void Render(float camX, float camY, bool targeted);
     void GetPosition(float& x, float& y);
+    void AssignThought();
 
     std::string GetName()      const { return m_name; }
     int GetDifficulty()        const { return m_difficulty; }

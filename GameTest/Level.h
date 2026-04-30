@@ -5,6 +5,7 @@ enum class GuardState {
     NONE,
     PROMPT,
     NO_FUNDS,
+    NOT_READY,
     OUTRO
 };
 
@@ -16,6 +17,7 @@ private:
     CSimpleSprite* m_window;
     CSimpleSprite* m_rain;
     CSimpleSprite* m_roamingNPC;
+    CSimpleSprite* m_roamingNPC2;
     CSimpleSprite* m_guardSprite;
     CSimpleSprite* m_ladderSprite;
     CSimpleSprite* m_dialogueBox;
@@ -26,6 +28,12 @@ private:
     float m_npcSpawnDelay;
     float m_npcSpeed;
     bool m_npcMoveRight;
+
+    bool m_npcActive2;
+    float m_npcTimer2;
+    bool m_npcMoveRight2;
+
+    int m_heatLevel;
 
  
     int m_currentCar;
@@ -53,7 +61,7 @@ public:
     ~Level();
 
     void Update(float deltaTime);
-    void RenderBackground(float camX);
+    void RenderBackground(float camX, float brightness = 1.0f);
     void RenderForeground(float camX, float camY, bool isColliding);
 
     //walking npc scope
@@ -69,4 +77,14 @@ public:
 
     void SetNPCAlerted(bool alerted) { m_npcAlerted = alerted; }
     void RenderWalkingNPCVision(float camX, float camY, bool isColliding) const;
+
+    void IncreaseHeat() { m_heatLevel++; }
+    void ResetHeat() { m_heatLevel = 0; }
+    int GetHeatLevel() const { return m_heatLevel; }
+    void Reset() { 
+        m_heatLevel = 0; 
+        m_currentCar = 1; 
+        m_guardState = GuardState::NONE; 
+        m_npcAlerted = false; 
+    }
 };

@@ -48,7 +48,7 @@ namespace App
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 
-	void PrintTTF(float x, float y, const char* text, float r, float g, float b, int slot) {
+	void PrintTTF(float x, float y, const char* text, float r, float g, float b, int slot, float a) {
 		float nx = x, ny = y;
 #if APP_USE_VIRTUAL_RES
 		APP_VIRTUAL_TO_NATIVE_COORDS(nx, ny);
@@ -61,7 +61,7 @@ namespace App
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBindTexture(GL_TEXTURE_2D, g_fontTexture[slot]);
-		glColor3f(r, g, b);
+		glColor4f(r, g, b, a);
 		glBegin(GL_QUADS);
 
 		float cx = 0.0f, cy = 0.0f; // stb tracks advance in pixel space from 0

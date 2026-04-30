@@ -86,7 +86,7 @@ void Intro::Render() {
     }
     m_dialogueBox->SetPosition(500.0f, 980.0f);
     m_dialogueBox->Draw();
-    App::PrintTTF(169, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f, 0);
+    App::PrintTTF(174, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f, 0);
 }
 
 bool Intro::IsDone() const {

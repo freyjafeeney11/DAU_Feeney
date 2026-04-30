@@ -5,7 +5,7 @@
 class Outro {
 private:
 
-    CSimpleSprite* m_slides[4];
+    CSimpleSprite* m_slides[7];
     CSimpleSprite* m_dialogueBox;
 
     int   m_currentSlide;
@@ -19,16 +19,19 @@ private:
     float m_endTimer = 0.0f;
     static constexpr float END_DELAY = 3.0f;
 
-    static constexpr int   SLIDE_COUNT = 4;
-    static constexpr float SLIDE_DURATION = 5.0f;
+    static constexpr int   SLIDE_COUNT = 7;
+    static constexpr float SLIDE_DURATION = 2.0f;
     static constexpr float TYPE_SPEED = 0.03f;
 
 
     const char* m_lines[SLIDE_COUNT] = {
-        "You've done it... all the missing gears, recovered at last.",
-        "The pocket watch stirs... and begins to tick once more.",
-        "The conductor's eyes flutter open, confused but alive.",
-        "With a great screech of brakes, the train shudders to a halt. Everyone is safe."
+        "The watch pieces begin to fit together...",
+        "A miraculous change on the tracks ahead...",
+        "The conductor is stirring from his unnatural sleep...",
+        "",
+        "",
+        "",
+        ""
     };
 
     void StartSlide(int index);

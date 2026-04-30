@@ -23,9 +23,9 @@ private:
 
     const char* m_lines[4] = {
         "Welcome aboard young one.. I have hypnotized the conductor with my special clock!",
-        "We are now rolling towards a very unfortunate fate...",
+        "We are now rolling towards a very unfortunate and permanent fate...",
         "And look.. my clock has broken into seven pieces!",
-        "If you want to save everyone you must recover the gears.. by bringing me gossip!!"
+        "To save everyone, recover the gears.. by picking pockets and bringing me gossip!!"
     };
 
     void StartSlide(int index);

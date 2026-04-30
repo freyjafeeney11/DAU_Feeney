@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include <windows.h> 
 #include <math.h>  
 #include "app\app.h"
@@ -21,22 +21,21 @@
 #include "GearManager.h"
 #include "Outro.h"
 
-#define SKIP_INTRO true
+#define SKIP_INTRO false
 
-// things to fix immediate
-// fix music and adding other sounds, ex gold sound effect
-// not deleting saved stuff between "Retry"
-// ladder draws ontop of clock ui
-// hover above items with or show the difficulty of the roll needed
-// idea .. at the end scene, the goblin takes all of the items you traded and swirls them around in an animation and tells a story ? 
-// outro
+#include "BadOutro.h"
+BadOutro* myBadOutro = nullptr;
+static constexpr int MAX_DAYS = 12;
+bool g_firstRequestShown = false;
+bool g_firstRequestDismissed = false;
 
 enum class SceneState {
     MAIN_MENU,
     INTRO,
     TRAIN_INTERIOR,
     ROOFTOP,
-    OUTRO
+    OUTRO,
+    BAD_OUTRO
 };
 // font stuff
 bool g_fontsLoaded = false;
@@ -45,6 +44,8 @@ bool g_isPaused = false;
 bool g_escWasDown = false;
 PauseMenu* myPauseMenu;
 Outro* myOutro = nullptr;
+
+
 
 // end menu
 CaughtMenu* myCaughtMenu;
@@ -73,6 +74,7 @@ MainMenu* myMainMenu;
 Intro* myIntro;
 
 CSimpleSprite* alertIcon;
+CSimpleSprite* m_dialogue_bg = nullptr;
 
 std::vector<Item> playerInventory;
 std::vector<NPC*> allNPCs;
@@ -162,13 +164,15 @@ void Init() {
     App::SetSoundVolume(".\\TestData\\audio\\train_sounds.wav", 0.7f);
 
     App::PlaySound(".\\TestData\\audio\\rain.wav", DSBPLAY_LOOPING);
-    App::SetSoundVolume(".\\TestData\\audio\\rain.wav", 0.6f);
+    App::SetSoundVolume(".\\TestData\\audio\\rain.wav", 0.5f);
 
     myCaughtMenu = new CaughtMenu();
     myPauseMenu = new PauseMenu();
     myPatroller = new Patroller();
     srand((unsigned int)time(nullptr));
     alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
+    m_dialogue_bg = App::CreateSprite(".\\TestData\\ui_screen.png", 1, 1);
+    m_dialogue_bg->SetScale(0.6f);
     alertIcon->SetScale(0.2f);
     g_clock = new GameClock();
     myCrowdManager = new CrowdManager();
@@ -188,6 +192,19 @@ void Init() {
     //App::InitFont(".\\TestData\\UncialAntiqua-Regular.ttf", 28.0f, 1);  // titles = 1
 }
 
+void ResetGameState() {
+    myPatroller->Reset();
+    g_caughtAnimTimer = 0.0f;
+    playerInventory.clear();
+    myUI->ResetGold();
+    myRooftop->Reset();
+    GearManager::GetInstance().Reset();
+    g_clock->Reset();
+    myLevel->Reset();
+    LoadCar(1);
+    g_firstRequestDismissed = false;
+}
+
 // UPDATE!! ***********************************************************************
 void Update(float deltaTime) {
     // check for outro
@@ -198,6 +215,23 @@ void Update(float deltaTime) {
 
     if (g_scene == SceneState::OUTRO) {
         myOutro->Update(deltaTime);
+        if (myOutro->ShouldReturnToMenu()) {
+            g_scene = SceneState::MAIN_MENU;
+            delete myOutro;
+            myOutro = nullptr;
+            ResetGameState();
+        }
+        return;
+    }
+
+    if (g_scene == SceneState::BAD_OUTRO) {
+        myBadOutro->Update(deltaTime);
+        if (myBadOutro->ShouldReturnToMenu()) {
+            g_scene = SceneState::MAIN_MENU;
+            delete myBadOutro;
+            myBadOutro = nullptr;
+            ResetGameState();
+        }
         return;
     }
 
@@ -227,15 +261,18 @@ void Update(float deltaTime) {
         return;
     }
 
-    // pause menu logic
+// pause menu & request window logic
     bool escDown = App::IsKeyPressed(VK_ESCAPE);
     if (escDown && !g_escWasDown) {
-        // prevent double opening pause and ui
-        if (!myUI->IsAnyUIOpen() && !myRooftop->IsTrading()) {
+        if (!g_firstRequestDismissed) {
+            g_firstRequestDismissed = true;
+        }
+        else if (!myUI->IsAnyUIOpen() && !myRooftop->IsTrading()) {
             g_isPaused = !g_isPaused;
         }
     }
     g_escWasDown = escDown;
+
     if (g_isPaused) {
         myPauseMenu->Update(g_isPaused);
         return;
@@ -251,6 +288,18 @@ void Update(float deltaTime) {
 
         if (myRooftop->JustSlept()) {
             g_clock->AdvanceToMorning();
+            myRooftop->NotifyNewDay();
+            myLevel->ResetHeat();
+
+            // day limit check
+            if (g_clock->GetDay() > MAX_DAYS && !GearManager::GetInstance().IsComplete()) {
+                g_scene = SceneState::BAD_OUTRO;
+                if (!myBadOutro) myBadOutro = new BadOutro();
+            }
+        }
+
+        if (myRooftop->JustSatByFire()) {
+            g_clock->SetHour(17); // jump to night
         }
 
         g_nearHatch = myRooftop->IsPlayerNearHatch(px);
@@ -284,17 +333,18 @@ void Update(float deltaTime) {
         bool retry = false;
         myCaughtMenu->Update(retry);
         if (retry) {
-            myPatroller->Reset();
-            g_caughtAnimTimer = 0.0f;
-            playerInventory.clear();
-            myUI->ResetGold();
-            LoadCar(1);
+            ResetGameState();
         }
         return;
     }
 
-    myUI->Update(deltaTime, activeNPC, playerInventory);
-    if (!myUI->IsAnyUIOpen()) {
+            size_t oldInvSize = playerInventory.size();
+            myUI->Update(deltaTime, activeNPC, playerInventory);
+            if (playerInventory.size() > oldInvSize) {
+                myLevel->IncreaseHeat();
+            }
+
+            if (!myUI->IsAnyUIOpen()) {
         float px, py;
         myPlayer->GetPosition(px, py);
 
@@ -319,12 +369,11 @@ void Update(float deltaTime) {
             bool inWalkingNPCVision = myLevel->IsPlayerInWalkingNPCVision(px, py);
             bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding() && !inWalkingNPCVision;
 
-            bool isHiding = myPlayer->IsHiding();
-            App::SetSoundVolume(".\\TestData\\audio\\jazz.wav", isHiding ? 0.08f : 0.3f);
-            App::SetSoundVolume(".\\TestData\\audio\\train_sounds.wav", isHiding ? 0.1f : 0.5f);
-            App::SetSoundVolume(".\\TestData\\audio\\rain.wav", isHiding ? 0.1f : 0.4f);
+            App::SetSoundVolume(".\\TestData\\audio\\jazz.wav", playerInClump ? 0.08f : 0.3f);
+            App::SetSoundVolume(".\\TestData\\audio\\train_sounds.wav", playerInClump ? 0.1f : 0.5f);
+            App::SetSoundVolume(".\\TestData\\audio\\rain.wav", playerInClump ? 0.2f : 0.4f);
 
-            myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x);
+            myPatroller->Update(deltaTime, px, py, playerInClump, g_camera.x, myLevel->GetHeatLevel());
             if (myPatroller->IsInactive()) {
                 myLevel->SetNPCAlerted(false);
             }
@@ -347,15 +396,13 @@ void Update(float deltaTime) {
 
             if (nearNPC && !myUI->inPickpocketUI) {
                 if (activeNPC && activeNPC->GetIsAlerted()) {
-                    App::PrintTTF(10, 140, "Can't steal from an alert NPC", 1.0f, 0.0f, 0.0f, 0);
+                    App::PrintTTF(10, 140, "Can't steal from an alert NPC", 0.239f, 0.0f, 0.0f, 0);
                     if (myPatroller->IsInactive()) myPatroller->Activate();
                 }
                 else {
                     if (App::IsKeyPressed(VK_RETURN)) {
                         if (myLevel->IsPlayerInWalkingNPCVision(px, py)) {
-                            // she saw you attempt to steal
                             activeNPC->SetAlerted(true);
-                            // add exclamation 
                             myLevel->SetNPCAlerted(true);
                             if (myPatroller->IsInactive()) myPatroller->Activate();
                         }
@@ -384,6 +431,10 @@ void Update(float deltaTime) {
 // RENDER!! *************************************************************************
 
 void Render() {
+    if (g_scene == SceneState::BAD_OUTRO) {
+        myBadOutro->Render();
+        return;
+    }
     if (g_scene == SceneState::OUTRO) {
         myOutro->Render();
         return;
@@ -406,12 +457,18 @@ void Render() {
         }
         g_clock->Render();
         float fade = myRooftop->GetFadeBrightness();
-        char timeBuf[32];
-        sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-        App::PrintTTF(805, 730, timeBuf, fade, fade, fade, 1);
+        char timeBuf[64];
+        int daysLeft = MAX_DAYS - g_clock->GetDay() + 1;
+        if (daysLeft < 0) daysLeft = 0;
+        if (daysLeft == 1) {
+            sprintf(timeBuf, "1 day left  %02d:00", g_clock->GetHour());
+        } else {
+            sprintf(timeBuf, "%d days left  %02d:00", daysLeft, g_clock->GetHour());
+        }
+        App::PrintTTF(760, 730, timeBuf, fade, fade, fade, 1);
 
         if (g_nearHatch && !myRooftop->IsTrading() && !myRooftop->IsSleeping()) {
-            App::PrintTTF(10, 60, "Press Down to climb back down", fade, fade, 0.0f, 0);
+            App::PrintTTF(10, 60, "Press Down to climb back down", fade * 0.239f, 0.0f, 0.0f, 0);
         }
 
         myRooftop->RenderPlant();
@@ -423,15 +480,16 @@ void Render() {
         return;
     }
 
-    myLevel->RenderBackground(g_camera.x);
+    float tod = g_clock->IsDay() ? 1.0f : 0.45f;
+    myLevel->RenderBackground(g_camera.x, tod);
 
 
     if (activeNPC && !myUI->inPickpocketUI) {
-        App::PrintTTF(10, 60, "Press Enter to check their pockets...", 1.0f, 1.0f, 0.0f, 0);
+        App::PrintTTF(10, 60, "Press Enter to check their pockets...", 0.239f, 0.0f, 0.0f, 0);
     }
 
     if (g_nearLadder) {
-        App::PrintTTF(10, 60, "Press Up to climb the ladder", 1.0f, 1.0f, 0.0f, 0);
+        App::PrintTTF(10, 60, "Press Up to climb the ladder", 0.239f, 0.0f, 0.0f, 0);
     }
 
     myCrowdManager->Render(g_camera.x, g_camera.y);
@@ -463,15 +521,21 @@ void Render() {
     myLevel->RenderForeground(g_camera.x, g_camera.y, isCollidingWithCone);
 
     g_clock->Render();
-    char timeBuf[32];
-    sprintf(timeBuf, "Day %d  %02d:00", g_clock->GetDay(), g_clock->GetHour());
-    App::PrintTTF(805, 730, timeBuf, 1.0f, 1.0f, 1.0f, 1);
+    char timeBuf[64];
+    int daysLeft = MAX_DAYS - g_clock->GetDay() + 1;
+    if (daysLeft < 0) daysLeft = 0;
+    if (daysLeft == 1) {
+        sprintf(timeBuf, "1 day left  %02d:00", g_clock->GetHour());
+    } else {
+        sprintf(timeBuf, "%d days left  %02d:00", daysLeft, g_clock->GetHour());
+    }
+    App::PrintTTF(760, 730, timeBuf, 1.0f, 1.0f, 1.0f, 1);
 
     // new ticketman logic
     myLevel->RenderGuardUI();
     myPlayer->GetPosition(px, py);
     if (myLevel->IsPlayerNearGuard(px) && !myLevel->IsGuardUIOpen()) {
-        App::PrintTTF(10, 60, "Press Enter to speak to the Ticketman", 1.0f, 1.0f, 0.0f, 0);
+        App::PrintTTF(10, 60, "Press Enter to speak to the Ticketman", 0.239f, 0.0f, 0.0f, 0);
     }
 
     if (myPatroller->IsPlayerCaught()) {
@@ -484,6 +548,20 @@ void Render() {
         return;
     }
 
+    // requests
+    if (!g_firstRequestDismissed) {
+
+        m_dialogue_bg->SetPosition(500.0f, 400.0f);
+        m_dialogue_bg->Draw();
+        
+        const DailyRequest& req = Rooftop::GetRequest(GearManager::GetInstance().GetGearCount());
+
+        App::PrintTTF(200, 520, "Welcome aboard... Please 'borrow' a very special item for me: ", 0.239f, 0.0f, 0.0f, 1);
+        App::PrintTTF(200, 480, req.riddle.c_str(), 1.0f, 1.0f, 1.0f, 0);
+        App::PrintTTF(200, 430, "Deliver it to me on top of the train tonight.", 0.239f, 0.0f, 0.0f, 0);
+        App::PrintTTF(200, 390, "Love, Goblin", 0.239f, 0.0f, 0.0f, 0);
+    }
+
     myUI->Render(activeNPC, playerInventory);
     if (g_isPaused) {
         myPauseMenu->Render();
@@ -491,6 +569,8 @@ void Render() {
 }
 
 void Shutdown() {
+    delete myBadOutro;
+    delete m_dialogue_bg;
     delete alertIcon;
     delete g_clock;
     delete myCrowdManager;

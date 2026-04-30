@@ -29,7 +29,7 @@ void GameClock::Update(float deltaTime) {
 }
 
 void GameClock::AdvanceToMorning() {
-    m_hour = 6;
+    m_hour = 9;
     m_accum = 0.0f;
     m_day++;
 }
@@ -37,6 +37,12 @@ void GameClock::AdvanceToMorning() {
 void GameClock::SetHour(int h) {
     m_hour = h;
     m_accum = 0.0f;
+}
+
+void GameClock::Reset() {
+    m_accum = 0.0f;
+    m_hour = 9;
+    m_day = 1;
 }
 
 void GameClock::Render() {

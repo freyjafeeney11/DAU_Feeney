@@ -15,10 +15,15 @@ Patroller::Patroller() :
     m_sprite->SetAnimation(0);
     m_sprite->SetScale(0.2f);
     m_sprite->SetPosition(-300.0f, 300.0f);
+
+    m_questionIcon = App::CreateSprite(".\\TestData\\question_mark.png", 1, 1);
+    m_questionIcon->SetScale(0.2f);
+    m_isHovering = false;
 }
 
 Patroller::~Patroller() {
     delete m_sprite;
+    delete m_questionIcon;
 }
 
 void Patroller::Activate() {
@@ -30,23 +35,29 @@ void Patroller::Activate() {
     m_playerCaught = false;
     m_sprite->SetPosition(-200.0f, 300.0f); // enter from the left
 }
-void Patroller::Update(float deltaTime, float playerX, float playerY, bool playerInClump, float camX) {
+void Patroller::Update(float deltaTime, float playerX, float playerY, bool playerInClump, float camX, int heatLevel) {
     if (m_state == PATROLLER_INACTIVE) return;
     float dt = deltaTime / 1000.0f;
     float x, y;
     m_sprite->GetPosition(x, y);
+
+    float currentSpeed = ms_SPEED + (heatLevel * 2.0f);
+    m_isHovering = false;
+
     if (m_state == PATROLLER_CHASING) {
-        if (x < playerX) x += ms_SPEED;
-        else if (x > playerX) x -= ms_SPEED;
+        if (x < playerX) x += currentSpeed;
+        else if (x > playerX) x -= currentSpeed;
         m_sprite->SetPosition(x, y);
         float dx = playerX - x;
         float dy = playerY - y;
         float distance = sqrtf(dx * dx + dy * dy);
         if (playerInClump) {
+            m_isHovering = true;
             m_hideTimer += dt;
             m_sprite->Update(deltaTime);
             if (m_hideTimer >= ms_HIDE_TIME) {
                 m_state = PATROLLER_LEAVING;
+                m_isHovering = false;
             }
             return;
         }
@@ -68,7 +79,7 @@ void Patroller::Update(float deltaTime, float playerX, float playerY, bool playe
         }
     }
     if (m_state == PATROLLER_LEAVING) {
-        x -= ms_SPEED;
+        x -= currentSpeed;
         m_sprite->SetPosition(x, y);
         if (x < -200.0f) {
             m_state = PATROLLER_INACTIVE;
@@ -87,5 +98,14 @@ void Patroller::Render(float camX, float camY) {
     m_sprite->GetPosition(actualX, actualY);
     m_sprite->SetPosition(actualX - camX, actualY - camY);
     m_sprite->Draw();
+
+    if (m_isHovering) {
+        static float t = 0.0f;
+        t += 0.05f;
+        float bob = sinf(t) * 4.0f;
+        m_questionIcon->SetPosition((actualX - camX) + 1.0f, (actualY - camY) + 150.0f + bob);
+        m_questionIcon->Draw();
+    }
+
     m_sprite->SetPosition(actualX, actualY);
 }

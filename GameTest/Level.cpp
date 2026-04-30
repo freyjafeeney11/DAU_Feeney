@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Level.h"
 #include <math.h>
+#include "GearManager.h"
 
 Level::Level() {
     m_city = App::CreateSprite(".\\TestData\\city.png", 1, 1);
@@ -29,6 +30,12 @@ Level::Level() {
     m_roamingNPC->SetAnimation(0);
     m_roamingNPC->SetPosition(-200.0f, -200.0f);
 
+    m_roamingNPC2 = App::CreateSprite(".\\TestData\\npc_walk.png", 5, 1);
+    m_roamingNPC2->SetScale(0.2f);
+    m_roamingNPC2->CreateAnimation(0, 0.3f, { 0,1,2,3,4 });
+    m_roamingNPC2->SetAnimation(0);
+    m_roamingNPC2->SetPosition(-200.0f, -200.0f);
+
     m_dialogueBox = App::CreateSprite(".\\TestData\\dialogue.png", 1, 1);
     m_dialogueBox->SetPosition(500.0f, 980.0f);
     m_dialogueBox->SetScale(0.6f);
@@ -38,6 +45,12 @@ Level::Level() {
     m_npcSpawnDelay = 3.0f;
     m_npcSpeed = 2.5f;
     m_npcMoveRight = true;
+
+    m_npcActive2 = false;
+    m_npcTimer2 = 0.0f;
+    m_npcMoveRight2 = false;
+
+    m_heatLevel = 0;
 
     m_guardSprite = App::CreateSprite(".\\TestData\\ticketman.png", 1, 1);
     m_guardSprite->SetScale(0.4f);
@@ -71,64 +84,82 @@ Level::~Level() {
     delete m_window;
     delete m_rain;
     delete m_roamingNPC;
+    delete m_roamingNPC2;
     delete m_guardSprite;
     delete m_ladderSprite;
 }
 
 bool Level::IsPlayerInWalkingNPCVision(float playerX, float playerY) const {
-    if (!m_npcActive) return false;
-    float nx, ny;
-    m_roamingNPC->GetPosition(nx, ny);
-    float dx = playerX - nx;
-    if (m_npcMoveRight && (dx < 0 || dx > VISION_RANGE)) return false;
-    if (!m_npcMoveRight && (dx > 0 || dx < -VISION_RANGE)) return false;
-    return true;
+    bool seen = false;
+    if (m_npcActive) {
+        float nx, ny;
+        m_roamingNPC->GetPosition(nx, ny);
+        float dx = playerX - nx;
+        if (m_npcMoveRight && (dx >= 0 && dx <= VISION_RANGE)) seen = true;
+        if (!m_npcMoveRight && (dx <= 0 && dx >= -VISION_RANGE)) seen = true;
+    }
+    if (m_npcActive2) {
+        float nx, ny;
+        m_roamingNPC2->GetPosition(nx, ny);
+        float dx = playerX - nx;
+        if (m_npcMoveRight2 && (dx >= 0 && dx <= VISION_RANGE)) seen = true;
+        if (!m_npcMoveRight2 && (dx <= 0 && dx >= -VISION_RANGE)) seen = true;
+    }
+    return seen;
 }
 
 void Level::RenderWalkingNPCVision(float camX, float camY, bool isColliding) const {
-    if (!m_npcActive) return;
-    float nx, ny;
-    m_roamingNPC->GetPosition(nx, ny);
-    float sx = nx - camX;
-    float sy = (ny + 150.0f) - camY;  // eye height?
-
-#if APP_USE_VIRTUAL_RES
-    APP_VIRTUAL_TO_NATIVE_COORDS(sx, sy);
-#endif
+    if (!m_npcActive && !m_npcActive2) return;
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_TEXTURE_2D);
 
-    const int NUM_RAYS = 16;
-    const float forwardX = m_npcMoveRight ? 1.0f : -1.0f;
-    const float TILT_DOWN = 20.0f;
+    auto drawCone = [&](CSimpleSprite* npc, bool movingRight) {
+        float nx, ny;
+        npc->GetPosition(nx, ny);
+        float sx = nx - camX;
+        float sy = (ny + 150.0f) - camY;
 
-    glBegin(GL_TRIANGLE_FAN);
-
-    if (isColliding || m_npcAlerted) {
-        glColor4f(1.0f, 0.0f, 0.0f, 0.25f);
-        glVertex2f(sx, sy);
-        glColor4f(1.0f, 0.0f, 0.0f, 0.09f);
-    }
-    else {
-        glColor4f(1.0f, 0.5f, 0.1f, 0.25f);
-        glVertex2f(sx, sy);
-        glColor4f(1.0f, 0.5f, 0.1f, 0.09f);
-    }
-
-    for (int i = 0; i <= NUM_RAYS; i++) {
-        float t = (float)i / NUM_RAYS;
-        float spread = (t - 0.5f) * 2.0f * VISION_CONE_HALF * VISION_RANGE;
-        float vx = nx - camX + forwardX * VISION_RANGE;
-        float vy = (ny + 150.0f) - camY + spread - TILT_DOWN;
 #if APP_USE_VIRTUAL_RES
-        APP_VIRTUAL_TO_NATIVE_COORDS(vx, vy);
+        APP_VIRTUAL_TO_NATIVE_COORDS(sx, sy);
 #endif
-        glVertex2f(vx, vy);
-    }
 
-    glEnd();
+        const int NUM_RAYS = 16;
+        const float forwardX = movingRight ? 1.0f : -1.0f;
+        const float TILT_DOWN = 20.0f;
+        
+        float coneWidth = (m_heatLevel >= 2) ? VISION_CONE_HALF * 2.0f : VISION_CONE_HALF;
+
+        glBegin(GL_TRIANGLE_FAN);
+
+        if (isColliding || m_npcAlerted) {
+            glColor4f(1.0f, 0.0f, 0.0f, 0.25f);
+            glVertex2f(sx, sy);
+            glColor4f(1.0f, 0.0f, 0.0f, 0.09f);
+        }
+        else {
+            glColor4f(1.0f, 0.5f, 0.1f, 0.25f);
+            glVertex2f(sx, sy);
+            glColor4f(1.0f, 0.5f, 0.1f, 0.09f);
+        }
+
+        for (int i = 0; i <= NUM_RAYS; i++) {
+            float t = (float)i / NUM_RAYS;
+            float spread = (t - 0.5f) * 2.0f * coneWidth * VISION_RANGE;
+            float vx = nx - camX + forwardX * VISION_RANGE;
+            float vy = sy + spread - TILT_DOWN;
+#if APP_USE_VIRTUAL_RES
+            APP_VIRTUAL_TO_NATIVE_COORDS(vx, vy);
+#endif
+            glVertex2f(vx, vy);
+        }
+        glEnd();
+    };
+
+    if (m_npcActive) drawCone(m_roamingNPC, m_npcMoveRight);
+    if (m_npcActive2) drawCone(m_roamingNPC2, m_npcMoveRight2);
+
     glDisable(GL_BLEND);
 }
 
@@ -165,6 +196,37 @@ void Level::Update(float deltaTime) {
 
         m_roamingNPC->Update(deltaTime);
     }
+
+    if (m_heatLevel >= 1) {
+        m_npcTimer2 += deltaTime / 1000.0f;
+        if (!m_npcActive2) {
+            if (m_npcTimer2 >= m_npcSpawnDelay * 1.5f) {
+                m_npcTimer2 = 0.0f;
+                m_npcActive2 = true;
+                m_npcMoveRight2 = !m_npcMoveRight;
+                const float startX = m_npcMoveRight2 ? -100.0f : 3000.0f;
+                m_roamingNPC2->SetPosition(startX, 280.0f);
+                m_roamingNPC2->SetFlipX(m_npcMoveRight2);
+                m_roamingNPC2->SetAnimation(0);
+            }
+        }
+        else {
+            float x, y;
+            m_roamingNPC2->GetPosition(x, y);
+            x += m_npcMoveRight2 ? m_npcSpeed : -m_npcSpeed;
+            m_roamingNPC2->SetPosition(x, y);
+            m_roamingNPC2->SetFlipX(!m_npcMoveRight2);
+
+            if (x > GUARD_WORLD_X + 50.0f && m_npcMoveRight2)  m_npcMoveRight2 = false;
+            if (x < 50.0f && !m_npcMoveRight2) m_npcMoveRight2 = true;
+
+            m_roamingNPC2->Update(deltaTime);
+        }
+    }
+    else {
+        m_npcActive2 = false;
+        m_roamingNPC2->SetPosition(-200.0f, -200.0f);
+    }
 }
 
 bool Level::IsPlayerNearGuard(float px) const {
@@ -186,11 +248,27 @@ void Level::UpdateGuard(float playerX, int& playerGold, bool& outChangeCar, floa
         return;
     }
 
+    if (m_guardState == GuardState::NOT_READY) {
+        m_msgTimer += dt;
+        if (m_msgTimer >= 3.0f || escDown) {
+            m_guardState = GuardState::NONE;
+        }
+        return;
+    }
+
     if (m_guardState == GuardState::NONE) {
         if (IsPlayerNearGuard(playerX) && enterDown && !m_enterWasDown) {
-            m_guardState = GuardState::PROMPT;
-            m_guardChoice = 0;
-            m_navDown = false;
+            int currentGear = GearManager::GetInstance().GetGearCount();
+            int requiredGear = (m_currentCar == 1) ? 3 : ((m_currentCar == 2) ? 6 : 9);
+            if (currentGear < requiredGear) {
+                m_guardState = GuardState::NOT_READY;
+                m_msgTimer = 0.0f;
+            }
+            else {
+                m_guardState = GuardState::PROMPT;
+                m_guardChoice = 0;
+                m_navDown = false;
+            }
         }
     }
     else if (m_guardState == GuardState::PROMPT) {
@@ -236,25 +314,30 @@ void Level::RenderGuardUI() {
     m_dialogueBox->Draw();
 
     if (m_guardState == GuardState::NO_FUNDS) {
-        App::PrintTTF(169, 710, "You don't have enough gold!", 1.0f, 0.4f, 0.4f, 0);
+        App::PrintTTF(169, 710, "You don't have enough gold!", 0.239f, 0.0f, 0.0f, 0);
+        return;
+    }
+
+    if (m_guardState == GuardState::NOT_READY) {
+        App::PrintTTF(169, 730, "Ticketmaster: The boss said nobody moves yet.", 1.0f, 1.0f, 1.0f, 0);
+        App::PrintTTF(169, 710, "Go bother the passengers, kid.", 1.0f, 0.7f, 0.7f, 0);
         return;
     }
 
     // dialogue text pos
     if (m_guardState == GuardState::PROMPT) {
         App::PrintTTF(169, 730, "Ticketmaster: Ticket for the next car is 10 gold.", 1.0f, 1.0f, 1.0f, 0);
-        App::PrintTTF(169, 705, "Pay 10 Gold?", 1.0f, 1.0f, 0.0f, 1);
+        App::PrintTTF(169, 705, "Pay 10 Gold?", 0.239f, 0.0f, 0.0f, 1);
 
         float yesR = (m_guardChoice == 0) ? 1.0f : 0.5f;
         float noR = (m_guardChoice == 1) ? 1.0f : 0.5f;
-        App::PrintTTF(185, 680, "YES", yesR, yesR, 0.0f, 1);
+        App::PrintTTF(185, 680, "YES", yesR * 0.239f, 0.0f, 0.0f, 1);
         App::PrintTTF(245, 680, "NO", noR, noR, noR, 1);
         float cursorX = (m_guardChoice == 0) ? 170.0f : 230.0f;
-        App::PrintTTF(cursorX, 680, ">", 1.0f, 1.0f, 0.0f, 0);
+        App::PrintTTF(cursorX, 680, ">", 0.239f, 0.0f, 0.0f, 0);
     }
 }
-
-void Level::RenderBackground(float camX) {
+void Level::RenderBackground(float camX, float brightness) {
     const float bgWidth = 1075.0f;
     const float windowWidth = 1024.0f;
 
@@ -262,16 +345,21 @@ void Level::RenderBackground(float camX) {
     const float windowScrollX = fmodf(camX * 0.3f, windowWidth);
     const float bgScrollX = fmodf(camX, bgWidth);
 
+    float b = brightness;
+
+    m_city->SetColor(b, b, b);
     m_city->SetPosition(512.0f - cityScrollX, 450.0f);
     m_city->Draw();
     m_city->SetPosition(512.0f - cityScrollX + windowWidth, 450.0f);
     m_city->Draw();
 
+    m_rain->SetColor(b, b, b);
     m_rain->SetPosition(475.0f - windowScrollX, 450.0f);
     m_rain->Draw();
     m_rain->SetPosition(475.0f - windowScrollX + windowWidth, 450.0f);
     m_rain->Draw();
 
+    m_background->SetColor(1.0f, 1.0f, 1.0f); // <-- Changed from (b, b, b)
     m_background->SetPosition(500.0f - bgScrollX, 400.0f);
     m_background->Draw();
     m_background->SetPosition(500.0f - bgScrollX + bgWidth, 400.0f);
@@ -290,6 +378,31 @@ void Level::RenderForeground(float camX, float camY, bool isColliding) {
         t += 0.05f;
         float bob = sinf(t) * 4.0f;
         float worldHeight = m_roamingNPC->GetHeight() * m_roamingNPC->GetScale();
+
+        float iconX = (actualX - camX) + 1.0f;
+        float iconY = (actualY - camY) + (worldHeight * 0.5f) + 60.0f + bob;
+
+        if (m_npcAlerted) {
+            m_alertIcon->SetPosition(iconX, iconY);
+            m_alertIcon->Draw();
+        }
+        else if (isColliding) {
+            m_questionIcon->SetPosition(iconX, iconY);
+            m_questionIcon->Draw();
+        }
+    }
+
+    if (m_npcActive2) {
+        float actualX, actualY;
+        m_roamingNPC2->GetPosition(actualX, actualY);
+        m_roamingNPC2->SetPosition(actualX - camX, actualY - camY);
+        m_roamingNPC2->Draw();
+        m_roamingNPC2->SetPosition(actualX, actualY);
+
+        static float t2 = 0.0f;
+        t2 += 0.05f;
+        float bob = sinf(t2) * 4.0f;
+        float worldHeight = m_roamingNPC2->GetHeight() * m_roamingNPC2->GetScale();
 
         float iconX = (actualX - camX) + 1.0f;
         float iconY = (actualY - camY) + (worldHeight * 0.5f) + 22.0f + bob;

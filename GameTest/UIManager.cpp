@@ -71,7 +71,6 @@ UIManager::UIManager() {
     m_granny_inv_sprite->SetPosition(500.0f, 400.0f);
     m_granny_inv_sprite->SetScale(0.6f);
 
-    // new npcs but need pos
     m_charles_inv_sprite = App::CreateSprite(".\\TestData\\charles_portrait.png", 1, 1);
     m_charles_inv_sprite->SetPosition(707.0f, 515.0f);
     m_charles_inv_sprite->SetScale(0.4f);
@@ -166,6 +165,9 @@ void UIManager::OpenUI() {
     m_diceTimer       = 0.0f;
     m_failureTimer    = 0.0f;
     m_currentSlot     = 0;
+    App::PlaySound(".\\TestData\\audio\\menu_open.wav", false);
+    App::SetSoundVolume(".\\TestData\\audio\\menu_open.wav", 0.4f);
+
 }
 
 void UIManager::CloseUI() {
@@ -176,6 +178,10 @@ void UIManager::CloseUI() {
 void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playerInventory) {
     if (App::IsKeyPressed('I') && !m_playerInventoryKeyDown) {
         m_playerInventoryKeyDown = true;
+
+        App::PlaySound(".\\TestData\\audio\\menu_open.wav", false);
+        App::SetSoundVolume(".\\TestData\\audio\\menu_open.wav", 0.4f);
+
         m_playerInventoryOpen    = !m_playerInventoryOpen;
     }
     if (!App::IsKeyPressed('I')) m_playerInventoryKeyDown = false;
@@ -186,6 +192,8 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
 
     if (App::IsKeyPressed(VK_ESCAPE)) {
         CloseUI();
+        App::PlaySound(".\\TestData\\audio\\menu_open.wav", false);
+        App::SetSoundVolume(".\\TestData\\audio\\menu_open.wav", 0.4f);
         return;
     }
 
@@ -197,18 +205,26 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
 
     if (!m_navButtonDown) {
         if (App::IsKeyPressed(VK_RIGHT)) {
+            App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+            App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
             if (m_currentSlot % 3 < 2) m_currentSlot++;
             m_navButtonDown = true;
         }
         if (App::IsKeyPressed(VK_LEFT)) {
+            App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+            App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
             if (m_currentSlot % 3 > 0) m_currentSlot--;
             m_navButtonDown = true;
         }
         if (App::IsKeyPressed(VK_DOWN)) {
+            App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+            App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
             if (m_currentSlot < 3) m_currentSlot += 3;
             m_navButtonDown = true;
         }
         if (App::IsKeyPressed(VK_UP)) {
+            App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+            App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
             if (m_currentSlot >= 3) m_currentSlot -= 3;
             m_navButtonDown = true;
         }
@@ -219,6 +235,8 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
 
     if (App::IsKeyPressed(VK_RETURN) && !m_enterButtonDown) {
         m_enterButtonDown = true;
+        App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+        App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
         if (!activeNPC) return;
 
         Item* currentTable = activeNPC->GetLootTable();
@@ -235,10 +253,12 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
                 else {
                     playerInventory.push_back(std::move(currentTable[m_currentSlot]));
                 }
-                App::PlaySound(".\\TestData\\audio\\gold_steal.wav", false);
-                App::SetSoundVolume(".\\TestData\\audio\\gold_steal.wav", 0.4f);
+                //App::PlaySound(".\\TestData\\audio\\gold_steal.wav", false);
+                //App::SetSoundVolume(".\\TestData\\audio\\gold_steal.wav", 0.4f);
             }
             else {
+                //App::PlaySound(".\\TestData\\audio\\whistle_blow.wav", false);
+                //App::SetSoundVolume(".\\TestData\\audio\\whistle_blow.wav", 0.4f);
                 m_lastStealSuccess = false;
                 activeNPC->SetAlerted(true);
             }
@@ -253,7 +273,17 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
     if (m_showDiceResult && !m_diceLanded) {
         m_diceTimer += dt;
         m_dice_roll->Update(deltaTime);
-        if (m_diceTimer >= m_diceDuration) m_diceLanded = true;
+        if (m_diceTimer >= m_diceDuration) {
+            m_diceLanded = true;
+            if (m_lastStealSuccess) {
+                App::PlaySound(".\\TestData\\audio\\gold_steal.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\gold_steal.wav", 0.4f);
+            }
+            else {
+                App::PlaySound(".\\TestData\\audio\\whistle_blow.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\whistle_blow.wav", 0.7f);
+            }
+        }
     }
 }
 
@@ -334,8 +364,14 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
 
         Item& selected = currentTable[m_currentSlot];
         if (selected.id != ITEM_NONE) {
-            App::PrintTTF(120, 310, selected.name.c_str(),       1.0f, 1.0f, 0.0f, 1);
+            App::PrintTTF(120, 310, selected.name.c_str(),       0.239f, 0.0f, 0.0f, 1);
             App::PrintTTF(120, 280, selected.flavorText.c_str(), 1.0f, 1.0f, 1.0f, 0);
+
+            if (!m_showDiceResult) {
+                char req[32];
+                sprintf(req, "Need: %d+", activeNPC->GetDifficulty());
+                App::PrintTTF(890, 190, req, 1.0f, 1.0f, 1.0f, 1);
+            }
         }
     }
 
@@ -345,10 +381,12 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
             char res[32];
             sprintf(res, "%d", m_lastDiceRoll);
             App::PrintTTF(927, 275, res, 1.0f, 1.0f, 1.0f, 1);
-            App::PrintTTF(890, 190,
-                m_lastStealSuccess ? "Success!" : "Failure",
-                m_lastStealSuccess ? 0.0f : 1.0f,
-                m_lastStealSuccess ? 1.0f : 0.0f, 0.0f, 1);
+            
+            if (m_lastStealSuccess) {
+                App::PrintTTF(890, 190, "Success!", 0.403f, 1.0f, 0.372f, 1);
+            } else {
+                App::PrintTTF(890, 190, "Failure", 0.239f, 0.0f, 0.0f, 1);
+            }
         }
     }
 }

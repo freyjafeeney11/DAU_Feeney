@@ -110,6 +110,6 @@ namespace App
 	void SetSoundVolume(const char* fileName, float volume);
 
 	void InitFont(const char* fontPath, float pixelHeight, int slot);
-	void PrintTTF(float x, float y, const char* text, float r, float g, float b, int slot = 0);
+	void PrintTTF(float x, float y, const char* text, float r, float g, float b, int slot = 0, float a = 1.0f);
 };
 #endif //_APP_H

@@ -20,7 +20,6 @@ void GearManager::AddGear() {
     if (m_watchSprite) {
         delete m_watchSprite;
     }
-     // add conditions for finished clock
     std::string spritePath = ".\\TestData\\watch_phase_" + std::to_string(m_gearCount) + ".png";
     m_watchSprite = App::CreateSprite(spritePath.c_str(), 1, 1);
 }
@@ -30,5 +29,13 @@ void GearManager::RenderUI(float x, float y) {
         m_watchSprite->SetPosition(x, y);
         m_watchSprite->SetScale(0.12f);
         m_watchSprite->Draw();
+    }
+}
+
+void GearManager::Reset() {
+    m_gearCount = 0;
+    if (m_watchSprite) {
+        delete m_watchSprite;
+        m_watchSprite = nullptr;
     }
 }

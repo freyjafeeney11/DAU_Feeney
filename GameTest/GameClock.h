@@ -13,7 +13,8 @@ public:
     void Update(float deltaTime);
     void AdvanceToMorning();
     void SetHour(int h);
-    bool IsDay()  const { return m_hour >= 6 && m_hour < 18; }
+    void Reset();
+    bool IsDay()  const { return m_hour >= 9 && m_hour < 17; }
     int  GetHour() const { return m_hour; }
     int  GetDay()  const { return m_day; }
     void Render();

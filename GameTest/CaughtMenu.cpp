@@ -53,5 +53,5 @@ void CaughtMenu::Render() {
     App::PrintTTF(470, 400.0f, "Quit", quitR, quitR, quitR, 1);
 
     float cursorY = (m_choice == 0) ? 440.0f : 400.0f;
-    App::PrintTTF(448, cursorY, ">", 1.0f, 0.9f, 0.2f, 1);
+    App::PrintTTF(448, cursorY, ">", 0.239f, 0.0f, 0.0f, 1);
 }

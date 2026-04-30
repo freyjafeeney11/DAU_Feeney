@@ -32,6 +32,7 @@ public:
     float GetScale()  const { return m_scale;  }
     unsigned int GetFrame()  const { return m_frame; }
 	void SetColor(float r, float g, float b) { m_red = r; m_green = g; m_blue = b; }
+    void SetAlpha(float a) { m_alpha = a; }
     void CreateAnimation( unsigned int id, float speed, const std::vector<int> &frames)
     {
         sAnimation anim;        
@@ -61,6 +62,7 @@ private:
 	float m_red = 1.0f;
 	float m_green = 1.0f;
 	float m_blue = 1.0f;
+    float m_alpha = 1.0f;
     int     m_currentAnim = -1;
     float   m_animTime = 0.0F;
 

@@ -62,5 +62,5 @@ void PauseMenu::Render() {
     App::PrintTTF(470, 470.0f, "Quit", quitR, quitR, quitR, 0);
 
     float cursorY = (m_choice == 0) ? 500.0f : 470.0f;
-    App::PrintTTF(440, cursorY, ">", 1.0f, 1.0f, 0.0f, 1);
+    App::PrintTTF(440, cursorY, ">", 0.239f, 0.0f, 0.0f, 1);
 }

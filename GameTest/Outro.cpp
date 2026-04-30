@@ -2,14 +2,13 @@
 #include "Outro.h"
 
 Outro::Outro() {
-    // Slide 0: broken watch (phase 8 sprite)
-    // Slide 1: fixed watch (phase 9 sprite / cover)
-    // Slide 2: conductor waking up
-    // Slide 3: conductor pulling the brake
-    m_slides[0] = App::CreateSprite(".\\TestData\\outro_1.png", 1, 1);
-    m_slides[1] = App::CreateSprite(".\\TestData\\outro_2.png", 1, 1);
-    m_slides[2] = App::CreateSprite(".\\TestData\\outro_3.png", 1, 1);
-    m_slides[3] = App::CreateSprite(".\\TestData\\outro_4.png", 1, 1);
+    m_slides[0] = App::CreateSprite(".\\TestData\\outro_watch_fix.png", 1, 1);
+    m_slides[1] = App::CreateSprite(".\\TestData\\outro_track_fix.png", 1, 1);
+    m_slides[2] = App::CreateSprite(".\\TestData\\outro_conductor_wake.png", 1, 1);
+    m_slides[3] = App::CreateSprite(".\\TestData\\outro_1.png", 1, 1);
+    m_slides[4] = App::CreateSprite(".\\TestData\\outro_2.png", 1, 1);
+    m_slides[5] = App::CreateSprite(".\\TestData\\outro_3.png", 1, 1);
+    m_slides[6] = App::CreateSprite(".\\TestData\\outro_4.png", 1, 1);
 
     for (int i = 0; i < SLIDE_COUNT; i++) {
         m_slides[i]->SetPosition(512.0f, 400.0f);
@@ -74,11 +73,10 @@ void Outro::Render() {
     if (m_currentSlide < SLIDE_COUNT) {
         m_slides[m_currentSlide]->Draw();
     }
-
-    // dialogue text if needed is here
-
-    //m_dialogueBox->Draw();
-    //App::Print(169, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f);
+    if (!m_fullText.empty()) {
+        m_dialogueBox->Draw();
+        App::Print(169, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f);
+    }
 }
 
 bool Outro::IsDone() const {
