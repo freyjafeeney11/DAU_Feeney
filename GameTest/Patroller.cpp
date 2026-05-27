@@ -1,6 +1,7 @@
-// Patroller.cpp
+
 #include "stdafx.h"
 #include "Patroller.h"
+#include "PlayerArchetype.h"
 #include <math.h>
 
 Patroller::Patroller() :
@@ -8,9 +9,11 @@ Patroller::Patroller() :
     m_hideTimer(0.0f),
     m_outOfRangeTimer(0.0f),
     m_caughtTimer(0.0f),
-    m_playerCaught(false)
+    m_playerCaught(false),
+    m_charismaticLives(2),
+    m_justEscaped(false)
 {
-    m_sprite = App::CreateSprite(".\\TestData\\patroller.png", 4, 1);// swap with patroller sprite later
+    m_sprite = App::CreateSprite(".\\TestData\\patroller.png", 4, 1);
     m_sprite->CreateAnimation(0, 0.15f, { 0, 1, 2, 3 });
     m_sprite->SetAnimation(0);
     m_sprite->SetScale(0.2f);
@@ -33,7 +36,8 @@ void Patroller::Activate() {
     m_hideTimer = 0.0f;
     m_outOfRangeTimer = 0.0f;
     m_playerCaught = false;
-    m_sprite->SetPosition(-200.0f, 300.0f); // enter from the left
+    m_justEscaped  = false;
+    m_sprite->SetPosition(-200.0f, 300.0f);
 }
 void Patroller::Update(float deltaTime, float playerX, float playerY, bool playerInClump, float camX, int heatLevel) {
     if (m_state == PATROLLER_INACTIVE) return;
@@ -65,7 +69,13 @@ void Patroller::Update(float deltaTime, float playerX, float playerY, bool playe
             m_hideTimer = 0.0f;
         }
         if (distance < ms_CATCH_RADIUS) {
-            m_playerCaught = true;
+            if (PlayerArchetype::current == Archetype::CHARISMATIC && m_charismaticLives > 0) {
+                m_charismaticLives--;
+                m_justEscaped = true;
+                m_state = PATROLLER_LEAVING;
+            } else {
+                m_playerCaught = true;
+            }
             return;
         }
         if (distance > ms_CHASE_RANGE) {

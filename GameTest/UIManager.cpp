@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "UIManager.h"
 #include "GearManager.h"
+#include "PlayerArchetype.h"
+#include <math.h>
 
 UIManager::UIManager() {
     m_playerInventoryOpen    = false;
@@ -17,6 +19,14 @@ UIManager::UIManager() {
     m_diceLanded             = false;
     m_failureTimer           = 0.0f;
     m_goldAmount             = 0;
+    m_pendingSlot            = -1;
+    m_luckyNotifTimer        = 0.0f;
+    m_showLuckyNotif         = false;
+    m_rawDiceRoll            = 0;
+    m_luckyPhase             = 0;
+    m_luckyPhaseTimer        = 0.0f;
+    m_playerInvSlot          = 0;
+    m_playerInvNavDown       = false;
 
     float coords[6][2] = {
         { 180.0f, 600.0f }, { 310.0f, 600.0f }, { 450.0f, 600.0f },
@@ -71,6 +81,7 @@ UIManager::UIManager() {
     m_granny_inv_sprite->SetPosition(500.0f, 400.0f);
     m_granny_inv_sprite->SetScale(0.6f);
 
+    
     m_charles_inv_sprite = App::CreateSprite(".\\TestData\\charles_portrait.png", 1, 1);
     m_charles_inv_sprite->SetPosition(707.0f, 515.0f);
     m_charles_inv_sprite->SetScale(0.4f);
@@ -87,7 +98,7 @@ UIManager::UIManager() {
     m_magda_inv_sprite->SetPosition(700.0f, 510.0f);
     m_magda_inv_sprite->SetScale(0.35f);
 
-    // **************8
+    
     m_icon_gold_small = App::CreateSprite(".\\TestData\\gold_icon_cropped.png", 1, 1);
     m_icon_gold_small->SetScale(0.6f);
 
@@ -126,6 +137,10 @@ UIManager::~UIManager() {
     delete m_rosamund_inv_sprite;
     delete m_randy_inv_sprite;
     delete m_granny_inv_sprite;
+    delete m_charles_inv_sprite;
+    delete m_helene_inv_sprite;
+    delete m_lupine_inv_sprite;
+    delete m_magda_inv_sprite;
     delete m_icon_gold_small;
     delete m_icon_flashdrive_small;
     delete m_icon_letter_small;
@@ -165,6 +180,7 @@ void UIManager::OpenUI() {
     m_diceTimer       = 0.0f;
     m_failureTimer    = 0.0f;
     m_currentSlot     = 0;
+    m_lastDiceRoll    = 0;
     App::PlaySound(".\\TestData\\audio\\menu_open.wav", false);
     App::SetSoundVolume(".\\TestData\\audio\\menu_open.wav", 0.4f);
 
@@ -173,6 +189,7 @@ void UIManager::OpenUI() {
 void UIManager::CloseUI() {
     inPickpocketUI   = false;
     m_showDiceResult = false;
+    m_playerInventoryOpen = false;
 }
 
 void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playerInventory) {
@@ -186,6 +203,30 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
     }
     if (!App::IsKeyPressed('I')) m_playerInventoryKeyDown = false;
 
+    if (m_playerInventoryOpen && !inPickpocketUI) {
+        if (!m_playerInvNavDown) {
+            if (App::IsKeyPressed(VK_RIGHT)) {
+                if (m_playerInvSlot % 3 < 2) m_playerInvSlot++;
+                m_playerInvNavDown = true;
+            }
+            if (App::IsKeyPressed(VK_LEFT)) {
+                if (m_playerInvSlot % 3 > 0) m_playerInvSlot--;
+                m_playerInvNavDown = true;
+            }
+            if (App::IsKeyPressed(VK_DOWN)) {
+                if (m_playerInvSlot < 3) m_playerInvSlot += 3;
+                m_playerInvNavDown = true;
+            }
+            if (App::IsKeyPressed(VK_UP)) {
+                if (m_playerInvSlot >= 3) m_playerInvSlot -= 3;
+                m_playerInvNavDown = true;
+            }
+        }
+        if (!App::IsKeyPressed(VK_RIGHT) && !App::IsKeyPressed(VK_LEFT) &&
+            !App::IsKeyPressed(VK_DOWN)  && !App::IsKeyPressed(VK_UP))
+            m_playerInvNavDown = false;
+    }
+
     if (!inPickpocketUI) return;
 
     float dt = deltaTime / 1000.0f;
@@ -197,91 +238,159 @@ void UIManager::Update(float deltaTime, NPC* activeNPC, std::vector<Item>& playe
         return;
     }
 
-    if (m_diceLanded && !m_lastStealSuccess) {
+    bool sequenceComplete = m_diceLanded && (PlayerArchetype::current != Archetype::LUCKY || m_luckyPhase >= 3);
+
+    if (sequenceComplete && !m_lastStealSuccess) {
         m_failureTimer += dt;
         if (m_failureTimer >= 1.0f) CloseUI();
         return;
     }
 
-    if (!m_navButtonDown) {
-        if (App::IsKeyPressed(VK_RIGHT)) {
-            App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
-            App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
-            if (m_currentSlot % 3 < 2) m_currentSlot++;
-            m_navButtonDown = true;
+    if (!m_showDiceResult || sequenceComplete) {
+        if (!m_navButtonDown) {
+            if (App::IsKeyPressed(VK_RIGHT)) {
+                App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
+                if (m_currentSlot % 3 < 2) m_currentSlot++;
+                m_navButtonDown = true;
+                m_showDiceResult = false;
+                m_lastDiceRoll = 0;
+            }
+            if (App::IsKeyPressed(VK_LEFT)) {
+                App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
+                if (m_currentSlot % 3 > 0) m_currentSlot--;
+                m_navButtonDown = true;
+                m_showDiceResult = false;
+                m_lastDiceRoll = 0;
+            }
+            if (App::IsKeyPressed(VK_DOWN)) {
+                App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
+                if (m_currentSlot < 3) m_currentSlot += 3;
+                m_navButtonDown = true;
+                m_showDiceResult = false;
+                m_lastDiceRoll = 0;
+            }
+            if (App::IsKeyPressed(VK_UP)) {
+                App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
+                if (m_currentSlot >= 3) m_currentSlot -= 3;
+                m_navButtonDown = true;
+                m_showDiceResult = false;
+                m_lastDiceRoll = 0;
+            }
         }
-        if (App::IsKeyPressed(VK_LEFT)) {
-            App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
-            App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
-            if (m_currentSlot % 3 > 0) m_currentSlot--;
-            m_navButtonDown = true;
-        }
-        if (App::IsKeyPressed(VK_DOWN)) {
-            App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
-            App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
-            if (m_currentSlot < 3) m_currentSlot += 3;
-            m_navButtonDown = true;
-        }
-        if (App::IsKeyPressed(VK_UP)) {
-            App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
-            App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
-            if (m_currentSlot >= 3) m_currentSlot -= 3;
-            m_navButtonDown = true;
+
+        if (App::IsKeyPressed(VK_RETURN) && !m_enterButtonDown) {
+            m_enterButtonDown = true;
+            if (!activeNPC) return;
+
+            Item* currentTable = activeNPC->GetLootTable();
+            int   difficulty   = activeNPC->GetDifficulty();
+
+            if (currentTable[m_currentSlot].id != ITEM_NONE) {
+                m_showDiceResult  = false;
+                m_showLuckyNotif  = false;
+                m_luckyPhase      = 0;
+                m_luckyPhaseTimer = 0.0f;
+                App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
+
+                int raw = (rand() % 20) + 1;
+                m_rawDiceRoll  = raw;
+                m_lastDiceRoll = raw;
+
+                m_showDiceResult = true;
+                m_diceLanded     = false;
+                m_diceTimer      = 0.0f;
+                m_dice_roll->SetAnimation(0);
+                m_pendingSlot = m_currentSlot;
+
+                int finalRoll = (PlayerArchetype::current == Archetype::LUCKY)
+                                 ? min(raw + 2, 20) : raw;
+                m_lastStealSuccess = (finalRoll >= difficulty);
+            }
         }
     }
+
     if (!App::IsKeyPressed(VK_RIGHT) && !App::IsKeyPressed(VK_LEFT) &&
         !App::IsKeyPressed(VK_DOWN)  && !App::IsKeyPressed(VK_UP))
         m_navButtonDown = false;
 
-    if (App::IsKeyPressed(VK_RETURN) && !m_enterButtonDown) {
-        m_enterButtonDown = true;
-        App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
-        App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
-        if (!activeNPC) return;
-
-        Item* currentTable = activeNPC->GetLootTable();
-        int   difficulty   = activeNPC->GetDifficulty();
-
-        if (currentTable[m_currentSlot].id != ITEM_NONE) {
-            m_lastDiceRoll = (rand() % 20) + 1;
-            if (m_lastDiceRoll >= difficulty) {
-                m_lastStealSuccess = true;
-                if (currentTable[m_currentSlot].id == ITEM_GOLD) {
-                    m_goldAmount += 10;
-                    currentTable[m_currentSlot] = Item();
-                }
-                else {
-                    playerInventory.push_back(std::move(currentTable[m_currentSlot]));
-                }
-                //App::PlaySound(".\\TestData\\audio\\gold_steal.wav", false);
-                //App::SetSoundVolume(".\\TestData\\audio\\gold_steal.wav", 0.4f);
-            }
-            else {
-                //App::PlaySound(".\\TestData\\audio\\whistle_blow.wav", false);
-                //App::SetSoundVolume(".\\TestData\\audio\\whistle_blow.wav", 0.4f);
-                m_lastStealSuccess = false;
-                activeNPC->SetAlerted(true);
-            }
-            m_showDiceResult = true;
-            m_diceLanded     = false;
-            m_diceTimer      = 0.0f;
-            m_dice_roll->SetAnimation(0);
-        }
-    }
     if (!App::IsKeyPressed(VK_RETURN)) m_enterButtonDown = false;
 
+    if (m_showLuckyNotif) {
+        m_luckyNotifTimer += dt;
+        if (m_luckyNotifTimer >= 1.5f) m_showLuckyNotif = false;
+    }
+
+    
     if (m_showDiceResult && !m_diceLanded) {
         m_diceTimer += dt;
         m_dice_roll->Update(deltaTime);
         if (m_diceTimer >= m_diceDuration) {
             m_diceLanded = true;
-            if (m_lastStealSuccess) {
-                App::PlaySound(".\\TestData\\audio\\gold_steal.wav", false);
-                App::SetSoundVolume(".\\TestData\\audio\\gold_steal.wav", 0.4f);
+            m_lastDiceRoll = m_rawDiceRoll;   
+
+            if (PlayerArchetype::current != Archetype::LUCKY) {
+                
+                if (!activeNPC) return;
+                Item* currentTable = activeNPC->GetLootTable();
+                int   difficulty   = activeNPC->GetDifficulty();
+                if (!m_lastStealSuccess) {
+                    activeNPC->SetAlerted(true);
+                    App::PlaySound(".\\TestData\\audio\\whistle_blow.wav", false);
+                    App::SetSoundVolume(".\\TestData\\audio\\whistle_blow.wav", 0.7f);
+                } else {
+                    if (m_pendingSlot >= 0 && currentTable[m_pendingSlot].id != ITEM_NONE) {
+                        if (currentTable[m_pendingSlot].id == ITEM_GOLD) {
+                            m_goldAmount += 10;
+                            currentTable[m_pendingSlot] = Item();
+                        } else {
+                            playerInventory.push_back(std::move(currentTable[m_pendingSlot]));
+                        }
+                    }
+                    App::PlaySound(".\\TestData\\audio\\gold_steal.wav", false);
+                    App::SetSoundVolume(".\\TestData\\audio\\gold_steal.wav", 0.4f);
+                }
+            } else {
+                m_luckyPhase      = 1;
+                m_luckyPhaseTimer = 0.0f;
             }
-            else {
+        }
+    }
+    if (m_diceLanded && PlayerArchetype::current == Archetype::LUCKY && m_luckyPhase > 0) {
+        m_luckyPhaseTimer += dt;
+
+        if (m_luckyPhase == 1 && m_luckyPhaseTimer >= 0.8f) {
+            m_luckyPhase      = 2;
+            m_luckyPhaseTimer = 0.0f;
+            m_showLuckyNotif  = true;
+            m_luckyNotifTimer = 0.0f;
+            m_lastDiceRoll    = min(m_rawDiceRoll + 2, 20);
+        }
+        else if (m_luckyPhase == 2 && m_luckyPhaseTimer >= 1.0f) {
+            m_luckyPhase      = 3;
+            m_luckyPhaseTimer = 0.0f;
+            m_showLuckyNotif  = false;
+            if (!activeNPC) return;
+            Item* currentTable = activeNPC->GetLootTable();
+            if (!m_lastStealSuccess) {
+                activeNPC->SetAlerted(true);
                 App::PlaySound(".\\TestData\\audio\\whistle_blow.wav", false);
                 App::SetSoundVolume(".\\TestData\\audio\\whistle_blow.wav", 0.7f);
+            } else {
+                if (m_pendingSlot >= 0 && currentTable[m_pendingSlot].id != ITEM_NONE) {
+                    if (currentTable[m_pendingSlot].id == ITEM_GOLD) {
+                        m_goldAmount += 10;
+                        currentTable[m_pendingSlot] = Item();
+                    } else {
+                        playerInventory.push_back(std::move(currentTable[m_pendingSlot]));
+                    }
+                }
+                App::PlaySound(".\\TestData\\audio\\gold_steal.wav", false);
+                App::SetSoundVolume(".\\TestData\\audio\\gold_steal.wav", 0.4f);
             }
         }
     }
@@ -296,6 +405,38 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
         int maxSlots = (int)playerInventory.size() < 6 ? (int)playerInventory.size() : 6;
         for (int i = 0; i < maxSlots; i++) {
             DrawItemIcon(playerInventory[i].id, m_playerSlotCoords[i][0], m_playerSlotCoords[i][1]);
+        }
+
+        int clampedSlot = m_playerInvSlot;
+        if (maxSlots > 0 && clampedSlot >= maxSlots) clampedSlot = maxSlots - 1;
+
+        if (maxSlots > 0) {
+            m_ui_cursor->SetPosition(m_playerSlotCoords[clampedSlot][0], m_playerSlotCoords[clampedSlot][1]);
+            m_ui_cursor->Draw();
+        }
+        if (maxSlots > 0 && clampedSlot < (int)playerInventory.size()) {
+            const Item& sel = playerInventory[clampedSlot];
+            App::PrintTTF(120, 310, sel.name.c_str(),       0.239f, 0.0f, 0.0f, 1);
+            App::PrintTTF(120, 280, sel.flavorText.c_str(), 1.0f,   1.0f, 1.0f, 0);
+        } else {
+            switch (PlayerArchetype::current) {
+                case Archetype::CHARISMATIC:
+                    App::PrintTTF(120, 310, "Charismatic", 0.239f, 0.0f, 0.0f, 1);
+                    App::PrintTTF(120, 280, "Silver tongued and slippery...you find yourself with more slack and more lives.", 1.0f, 1.0f, 1.0f, 0);
+                    App::PrintTTF(120, 260, "+2 extra lives", 1.0f, 1.0f, 1.0f, 0);
+                    break;
+                case Archetype::DEXTEROUS:
+                    App::PrintTTF(120, 310, "Dexterous", 0.239f, 0.0f, 0.0f, 1);
+                    App::PrintTTF(120, 280, "Being quick on your feet is a plus in this business", 1.0f, 1.0f, 1.0f, 0);
+                    App::PrintTTF(120, 260, "You are much faster.", 1.0f, 1.0f, 1.0f, 0);
+                    break;
+                case Archetype::LUCKY:
+                    App::PrintTTF(120, 310, "Lucky", 0.239f, 0.0f, 0.0f, 1);
+                    App::PrintTTF(120, 280, "Play with weighted dice to even the odds.", 1.0f, 1.0f, 1.0f, 0);
+                    App::PrintTTF(120, 260, "+2 to all dice rolls.", 1.0f, 1.0f, 1.0f, 0);
+                    break;
+                default: break;
+            }
         }
 
         char goldText[32];
@@ -375,17 +516,29 @@ void UIManager::Render(NPC* activeNPC, std::vector<Item>& playerInventory) {
         }
     }
 
+
     if (m_showDiceResult) {
         m_dice_roll->Draw();
+
+        if (m_showLuckyNotif) {
+            float pulse = 0.7f + 0.3f * sinf(m_luckyNotifTimer * 10.0f);
+            App::PrintTTF(900, 300, "+2 for luck!", 0.403f, 1.0f * pulse, 0.372f, 1);
+        }
+
         if (m_diceLanded) {
             char res[32];
             sprintf(res, "%d", m_lastDiceRoll);
             App::PrintTTF(927, 275, res, 1.0f, 1.0f, 1.0f, 1);
-            
-            if (m_lastStealSuccess) {
-                App::PrintTTF(890, 190, "Success!", 0.403f, 1.0f, 0.372f, 1);
-            } else {
-                App::PrintTTF(890, 190, "Failure", 0.239f, 0.0f, 0.0f, 1);
+
+            bool showOutcome = (PlayerArchetype::current != Archetype::LUCKY)
+                                || (m_luckyPhase >= 3);
+
+            if (showOutcome) {
+                if (m_lastStealSuccess) {
+                    App::PrintTTF(890, 190, "Success!", 0.403f, 1.0f, 0.372f, 1);
+                } else {
+                    App::PrintTTF(890, 190, "Failure", 0.239f, 0.0f, 0.0f, 1);
+                }
             }
         }
     }

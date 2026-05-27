@@ -19,28 +19,27 @@ public:
 	
 private:
 	
-	//<DirectSound>
+	
 	WAVEFORMATEX m_WFE;
 	LPDIRECTSOUND m_lpDS;
 	LPDIRECTSOUNDBUFFER m_lpDSB;
 	HANDLE m_pHEvent[2];
-	//</DirectSound>
+	
 
-	//<Audio Buffer>
+	
 	LPBYTE m_lpAudioBuf;
 	LPGETAUDIOSAMPLES_PROGRESS m_lpGETAUDIOSAMPLES;
 	LPVOID m_lpData;
-	//</Audio Buffer>
+	
 
-	//<Playing>
+	
 	MMRESULT m_timerID;
 	DWORD m_dwCircles1;
 	DWORD m_dwCircles2;
 	int m_iDB;	
-	//</Playing>
+	
 
-	//<Error Information>
+	
 	CString m_strLastError;
-	//</Error Information>
+	
 };
-//</CMyDirectSound  >

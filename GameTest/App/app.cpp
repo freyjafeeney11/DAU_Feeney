@@ -1,9 +1,9 @@
-//---------------------------------------------------------------------------------
-// App.cpp
-// Implementation of the calls that are exposed via the App namespace.
-//---------------------------------------------------------------------------------
+
+
+
+
 #include "stdafx.h"
-//---------------------------------------------------------------------------------
+
 #include <string>
 #include "main.h"
 #include "app.h"
@@ -11,8 +11,8 @@
 #include "SimpleController.h"
 #include "SimpleSprite.h"
 
-//---------------------------------------------------------------------------------
-// Utils and externals for system info.
+
+
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -53,9 +53,9 @@ namespace App
 #if APP_USE_VIRTUAL_RES
 		APP_VIRTUAL_TO_NATIVE_COORDS(nx, ny);
 #endif
-		// scale pixel offsets from stb down to native GL coord space
-		const float scaleX = 2.0f / WINDOW_WIDTH;
-		const float scaleY = 2.0f / WINDOW_HEIGHT;
+		
+		const float scaleX = 2.0f / VIEWPORT_WIDTH;
+		const float scaleY = 2.0f / VIEWPORT_HEIGHT;
 
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_BLEND);
@@ -64,7 +64,7 @@ namespace App
 		glColor4f(r, g, b, a);
 		glBegin(GL_QUADS);
 
-		float cx = 0.0f, cy = 0.0f; // stb tracks advance in pixel space from 0
+		float cx = 0.0f, cy = 0.0f; 
 		while (*text) {
 			if (*text >= 32 && *text < 128) {
 				stbtt_aligned_quad q;
@@ -95,7 +95,7 @@ namespace App
 		APP_VIRTUAL_TO_NATIVE_COORDS(ex, ey);
 #endif
 		glBegin(GL_LINES);
-		glColor3f(r, g, b); // Yellow
+		glColor3f(r, g, b); 
 		glVertex2f(sx, sy);
 		glVertex2f(ex, ey);
 		glEnd();
@@ -115,12 +115,16 @@ namespace App
 	void GetMousePos(float &x, float &y)
 	{
 		POINT mousePos;
-		GetCursorPos(&mousePos);	// Get the mouse cursor 2D x,y position			
+		GetCursorPos(&mousePos);	
 		ScreenToClient(MAIN_WINDOW_HANDLE, &mousePos);
 		x = (float)mousePos.x;
 		y = (float)mousePos.y;
-		x = (x * (2.0f / WINDOW_WIDTH) - 1.0f);
-		y = -(y * (2.0f / WINDOW_HEIGHT) - 1.0f);
+		
+		x -= VIEWPORT_X;
+		y -= VIEWPORT_Y;
+		
+		x = (x * (2.0f / VIEWPORT_WIDTH) - 1.0f);
+		y = -(y * (2.0f / VIEWPORT_HEIGHT) - 1.0f);
 
 #if APP_USE_VIRTUAL_RES		
 		APP_NATIVE_TO_VIRTUAL_COORDS(x, y);
@@ -139,20 +143,20 @@ namespace App
 	{
 		return CSimpleSound::GetInstance().IsPlaying(fileName);
 	}
-	// This prints a string to the screen
+	
 	void Print(float x, float y, const char *st, float r, float g, float b, void *font)
 	{
 
 #if APP_USE_VIRTUAL_RES		
 		APP_VIRTUAL_TO_NATIVE_COORDS(x, y);
 #endif		
-		// Set location to start printing text
-		glColor3f(r, g, b); // Yellow
+		
+		glColor3f(r, g, b); 
 		glRasterPos2f(x, y);
 		int l = (int)strlen(st);
 		for (int i = 0; i < l; i++)
 		{
-			glutBitmapCharacter(font, st[i]); // Print a character on the screen
+			glutBitmapCharacter(font, st[i]); 
 		}
 	}
 	const CController &GetController( int pad )

@@ -1,7 +1,7 @@
-//-----------------------------------------------------------------------------
-// SimpleSprite.h
-// Privides a very simple DSOUND wrapper to load and play wav files.
-//-----------------------------------------------------------------------------
+
+
+
+
 #ifndef _SIMPLESPRITE_H_
 #define _SIMPLESPRITE_H_
 
@@ -9,14 +9,14 @@
 #include <map>
 #include <vector>
 
-//-----------------------------------------------------------------------------
-// CSimpleSprite
-//-----------------------------------------------------------------------------
+
+
+
 class CSimpleSprite
 {
 public:
     void SetFlipX(bool flip) { m_flipX = flip; CalculateUVs(); }
-    // If width, height and UV coords are not provided then they will be derived from the texture size.
+    
     CSimpleSprite(const char *fileName, unsigned int nColumns = 1, unsigned int nRows = 1 );
     void Update(float dt);
     void Draw();
@@ -74,7 +74,7 @@ private:
     };
     std::vector<sAnimation> m_animations;
 
-    // Texture management.
+    
     struct sTextureDef
     {
         unsigned int m_width;

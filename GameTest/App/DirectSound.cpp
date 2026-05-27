@@ -1,35 +1,35 @@
-/////////////////////////////////////////////////////////////////////////////
-// Copyright (C) 1998 by Jörg König
-// All rights reserved
-//
-// This file is part of the completely free tetris clone "CGTetris".
-//
-// This is free software.
-// You may redistribute it by any means providing it is not sold for profit
-// without the authors written consent.
-//
-// No warrantee of any kind, expressed or implied, is included with this
-// software; use at your own risk, responsibility for damages (if any) to
-// anyone resulting from the use of this software rests entirely with the
-// user.
-//
-// Send bug reports, bug fixes, enhancements, requests, flames, etc., and
-// I'll try to keep a version up to date.  I can be reached as follows:
-//    J.Koenig@adg.de                 (company site)
-//    Joerg.Koenig@rhein-neckar.de    (private site)
-/////////////////////////////////////////////////////////////////////////////
 
 
 
-// DirectSound.cpp: implementation of the CDirectSound class.
-//
-//////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #include "stdafx.h"
 #define ASSERT(_f_)	printf("assert\n");
 #include "DirectSound.h"
 
-// The following macro is defined since DirectX 5, but will work with
-// older versions too.
+
+
 #ifndef DSBLOCK_ENTIREBUFFER
 	#define DSBLOCK_ENTIREBUFFER        0x00000002
 #endif
@@ -61,9 +61,9 @@ static void DSError( HRESULT hRes ) {
 	}
 }
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
+
+
+
 
 LPDIRECTSOUND CDirectSound::m_lpDirectSound;
 DWORD CDirectSound::m_dwInstances;
@@ -93,8 +93,8 @@ CDirectSound::~CDirectSound()
 
 BOOL CDirectSound::Create(LPCTSTR pszResource, HWND * pWnd)
 {
-	//////////////////////////////////////////////////////////////////
-	// load resource
+	
+	
 	HINSTANCE hApp = ::GetModuleHandle(0);
 	ASSERT(hApp);
 
@@ -115,21 +115,21 @@ BOOL CDirectSound::Create(LPCTSTR pszResource, HWND * pWnd)
 
 
 BOOL CDirectSound :: Create(LPVOID pSoundData, HWND * pWnd) {
-//	if(pWnd == 0)
-//		pWnd = AfxGetApp()->GetMainWnd();
+
+
 
 	ASSERT(pWnd != 0);
-//	ASSERT(::IsWindow(pWnd->GetSafeHwnd()));
+
 
 	ASSERT(pSoundData != 0);
 
-	//////////////////////////////////////////////////////////////////
-	// create direct sound object
+	
+	
 	
 	if( m_lpDirectSound == 0 ) {
-		// Someone might use sounds for starting apps. This may cause
-		// DirectSoundCreate() to fail because the driver is used by
-		// anyone else. So wait a little before starting with the work ...
+		
+		
+		
 		HRESULT hRes = DS_OK;
 		short nRes = 0;
 
@@ -169,10 +169,10 @@ BOOL CDirectSound :: GetWaveData(void * pRes, WAVEFORMATEX * & pWaveHeader, void
 	DWORD dwType = *pdw++;
 
 	if( dwRiff != mmioFOURCC('R', 'I', 'F', 'F') )
-		return FALSE;      // not even RIFF
+		return FALSE;      
 
 	if( dwType != mmioFOURCC('W', 'A', 'V', 'E') )
-		return FALSE;      // not a WAV
+		return FALSE;      
 
 	DWORD * pdwEnd = (DWORD *)((BYTE *)pdw + dwLength-4);
 
@@ -184,7 +184,7 @@ BOOL CDirectSound :: GetWaveData(void * pRes, WAVEFORMATEX * & pWaveHeader, void
 			case mmioFOURCC('f', 'm', 't', ' '):
 				if( !pWaveHeader ) {
 					if( dwLength < sizeof(WAVEFORMAT) )
-						return FALSE;      // not a WAV
+						return FALSE;      
 
 					pWaveHeader = (WAVEFORMATEX *)pdw;
 
@@ -212,16 +212,16 @@ BOOL CDirectSound::CreateSoundBuffer(WAVEFORMATEX * pcmwf)
 {
 	DSBUFFERDESC dsbdesc;
 
-	// Set up DSBUFFERDESC structure.
-	memset(&dsbdesc, 0, sizeof(DSBUFFERDESC)); // Zero it out.
+	
+	memset(&dsbdesc, 0, sizeof(DSBUFFERDESC)); 
 	dsbdesc.dwSize = sizeof(DSBUFFERDESC);
-	// Need no controls (pan, volume, frequency).
-	dsbdesc.dwFlags = DSBCAPS_STATIC;		// assumes that the sound is played often
+	
+	dsbdesc.dwFlags = DSBCAPS_STATIC;		
 	dsbdesc.dwBufferBytes = m_dwTheSound;
-	dsbdesc.lpwfxFormat = pcmwf;    // Create buffer.
+	dsbdesc.lpwfxFormat = pcmwf;    
 	HRESULT hRes;
 	if( DS_OK != (hRes = m_lpDirectSound->CreateSoundBuffer(&dsbdesc, &m_pDsb, 0)) ) {
-		// Failed.
+		
 		DSError(hRes);
 		m_pDsb = 0;
 		return FALSE;
@@ -234,40 +234,40 @@ BOOL CDirectSound::CreateSoundBuffer(WAVEFORMATEX * pcmwf)
 BOOL CDirectSound::SetSoundData(void * pSoundData, DWORD dwSoundSize) {
 	LPVOID lpvPtr1;
 	DWORD dwBytes1;
-	// Obtain write pointer.
+	
 	HRESULT hr = m_pDsb->Lock(0, 0, &lpvPtr1, &dwBytes1, 0, 0, DSBLOCK_ENTIREBUFFER);    
-    // If DSERR_BUFFERLOST is returned, restore and retry lock.
+    
 	if(DSERR_BUFFERLOST == hr) {
 		m_pDsb->Restore();
 		hr = m_pDsb->Lock(0, 0, &lpvPtr1, &dwBytes1, 0, 0, DSBLOCK_ENTIREBUFFER);
 	}
 	if(DS_OK == hr) {
-		// Write to pointers.
+		
 		::CopyMemory(lpvPtr1, pSoundData, dwBytes1);
-		// Release the data back to DirectSound.
+		
 		hr = m_pDsb->Unlock(lpvPtr1, dwBytes1, 0, 0);
 		if(DS_OK == hr)
             return TRUE;
 	}
-	// Lock, Unlock, or Restore failed.
+	
 	return FALSE;
 }
 
 void CDirectSound::Play(DWORD dwStartPosition, BOOL bLoop)
 {
 	if( ! IsValid() || ! IsEnabled() )
-		return;		// no chance to play the sound ...
+		return;		
 
 	if( dwStartPosition > m_dwTheSound )
 		dwStartPosition = m_dwTheSound;
 	m_pDsb->SetCurrentPosition(dwStartPosition);
 	if( DSERR_BUFFERLOST == m_pDsb->Play(0, 0, bLoop ? DSBPLAY_LOOPING : 0) ) {
-		// another application had stolen our buffer
-		// Note that a "Restore()" is not enough, because
-		// the sound data is invalid after Restore().
+		
+		
+		
 		SetSoundData(m_pTheSound, m_dwTheSound);
 
-		// Try playing again
+		
 		m_pDsb->Play(0, 0, bLoop ? DSBPLAY_LOOPING : 0);
 	}
 }

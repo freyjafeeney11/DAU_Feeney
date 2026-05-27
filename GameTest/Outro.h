@@ -16,18 +16,17 @@ private:
     float m_typeTimer;
     int   m_typeIndex;
 
-    float m_endTimer = 0.0f;
-    static constexpr float END_DELAY = 3.0f;
+    bool  m_enterWasDown;
+    bool  m_done;
 
     static constexpr int   SLIDE_COUNT = 7;
-    static constexpr float SLIDE_DURATION = 2.0f;
     static constexpr float TYPE_SPEED = 0.03f;
 
 
     const char* m_lines[SLIDE_COUNT] = {
-        "The watch pieces begin to fit together...",
-        "A miraculous change on the tracks ahead...",
-        "The conductor is stirring from his unnatural sleep...",
+        "All seven gears click into place!",
+        "As promised, the clock wakes the conductor from his trance",
+        "And the tracks are magically repaired!",
         "",
         "",
         "",

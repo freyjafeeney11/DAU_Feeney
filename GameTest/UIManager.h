@@ -19,7 +19,7 @@ private:
     CSimpleSprite* m_dice_roll;
     CSimpleSprite* m_ui_cursor;
 
-    // one set of icons used everywhere
+    
     CSimpleSprite* m_icon_gold_small;
     CSimpleSprite* m_icon_flashdrive_small;
     CSimpleSprite* m_icon_letter_small;
@@ -47,6 +47,16 @@ private:
     bool  m_playerInventoryOpen;
     bool  m_playerInventoryKeyDown;
     int   m_goldAmount;
+
+    int   m_pendingSlot;
+    float m_luckyNotifTimer;
+    bool  m_showLuckyNotif;
+    int   m_rawDiceRoll;
+    int   m_luckyPhase;
+    float m_luckyPhaseTimer;
+
+    int   m_playerInvSlot;
+    bool  m_playerInvNavDown;
 
     float m_slotCoords[6][2];
     float m_playerSlotCoords[6][2];

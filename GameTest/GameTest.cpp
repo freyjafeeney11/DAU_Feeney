@@ -3,6 +3,7 @@
 #include <math.h>  
 #include "app\app.h"
 #include <string>
+#include <cstring>
 #include <ctime>
 #include <vector>
 #include "CrowdManager.h"
@@ -20,8 +21,15 @@
 #include "CaughtMenu.h"
 #include "GearManager.h"
 #include "Outro.h"
+#include "NPCManager.h"
+#include "StatSelect.h"
+#include "PlayerArchetype.h"
+#include "CharismaticMenu.h"
 
-#define SKIP_INTRO false
+#define SKIP_INTRO    false
+#define SKIP_TO_OUTRO false
+
+
 
 #include "BadOutro.h"
 BadOutro* myBadOutro = nullptr;
@@ -32,27 +40,69 @@ bool g_firstRequestDismissed = false;
 enum class SceneState {
     MAIN_MENU,
     INTRO,
+    STAT_SELECT,
     TRAIN_INTERIOR,
+    CAR_TRANSITION,
     ROOFTOP,
     OUTRO,
-    BAD_OUTRO
+    BAD_OUTRO,
+    LADDER_TRANSITION,
+    OUTRO_INTRO
 };
-// font stuff
+
+const char* LORE_STRINGS[13][3] = {
+    {"ADAM TILER:", "A pickpocket's associate, who receives the stolen goods, and runs off with them.", ""},
+    {"ANABAPTIST:", "A pickpocket caught in the fact, and punished with the discipline of the pump or horse-pond.", ""},
+    {"BULK AND FILE:", "Two pickpockets; the bulk jostles the party to be robbed, and the file does the business.", ""},
+    {"KNUCKLES:", "Pickpockets who attend the avenues to public places to steal pocket-books, watches, &c.", ""},
+    {"CANNON:", "In pickpocket parlance it signifies a pickpocket of indefinite order. A pickpocket of the highest level.", ""},
+    {"JERVE:", "A vest pocket; the \"tool\"; the \"wire\"; the \"claw\" in a pickpocket mob.", ""},
+    {"KICK:", "The front pocket of pants.", ""},
+    {"NICK:", "To surreptitiously extract something from the person; to purloin by stealth in personal presence of a victim.", ""},
+    {"PROP:", "A diamond stud originally, now comprehending diamonds in any sense.", ""},
+    {"REEF:", "To lift a pocket lining so it may be slowly turned inside out without detection; it is done in cases", "where the pocket is too deep, tight or where extraordinary caution is expedient."},
+    {"TOG:", "An overcoat used for a shield. From Latin \"Toga,\" a cloak.", ""},
+    {"TWEEZER:", "A small pocketbook with knob clasps.", ""},
+    {"WIRE:", "The principal craftsman in a group of pickpockets.", ""}
+};
+int g_loreIndex = 0;
+float g_ladderFadeTimer = 0.0f;
+bool g_ladderGoingUp = false;
+
 bool g_fontsLoaded = false;
-// pause menu stuff
+
+CSimpleSprite* g_transitionFrames[4];
+float g_transitionTimer = 0.0f;
+int g_transitionCurrentFrame = 0;
+int g_nextCarToLoad = 1;
+
 bool g_isPaused = false;
 bool g_escWasDown = false;
 PauseMenu* myPauseMenu;
 Outro* myOutro = nullptr;
 
+float  g_outroIntroTimer   = 0.0f;
+int    g_outroIntroPhase   = 0;
+std::string g_outroIntroText;
+const char* g_outroIntroFull[2] = { "", "" };
+int    g_outroIntroIdx     = 0;
+float  g_outroTypeTimer    = 0.0f;
+int    g_outroTypeIndex    = 0;
+static constexpr float OUTRO_INTRO_FADE   = 1.2f;
+static constexpr float OUTRO_INTRO_PAUSE  = 2.5f;
+static constexpr float OUTRO_TYPE_SPEED   = 0.035f;
 
 
-// end menu
+
+
 CaughtMenu* myCaughtMenu;
+CharismaticMenu* myCharismaticMenu = nullptr;
 float g_caughtAnimTimer = 0.0f;
 static constexpr float CAUGHT_ANIM_DURATION = 0.6f;
 
-SceneState g_scene = SKIP_INTRO ? SceneState::TRAIN_INTERIOR : SceneState::MAIN_MENU;
+SceneState g_scene = SKIP_TO_OUTRO ? SceneState::OUTRO_INTRO
+                   : SKIP_INTRO    ? SceneState::TRAIN_INTERIOR
+                   : SceneState::MAIN_MENU;
 bool g_nearLadder = false;
 bool g_nearHatch = false;
 
@@ -72,93 +122,18 @@ Level* myLevel;
 Rooftop* myRooftop;
 MainMenu* myMainMenu;
 Intro* myIntro;
+StatSelect* myStatSelect = nullptr;
 
 CSimpleSprite* alertIcon;
 CSimpleSprite* m_dialogue_bg = nullptr;
 
 std::vector<Item> playerInventory;
-std::vector<NPC*> allNPCs;
-NPC* activeNPC = nullptr;
-
-int rosamundLoot[6] = { ITEM_GOLD, ITEM_LETTER,    ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
-int grannyLoot[6] = { ITEM_GOLD, ITEM_BOOK,   ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
-int randyLoot[6] = { ITEM_GOLD, ITEM_FLASHDRIVE, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
-
-int heleneLoot[6] = { ITEM_GOLD, ITEM_COLLAR, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
-int magdaLoot[6] = { ITEM_GOLD, ITEM_RAT, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
-int lupineLoot[6] = { ITEM_GOLD, ITEM_PAINTING, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
-int charlesLoot[6] = { ITEM_GOLD, ITEM_BOUQUET, ITEM_NONE, ITEM_NONE, ITEM_NONE, ITEM_NONE };
-
-NPC* rosamund;
-NPC* granny;
-NPC* randy;
-
-void DrawAlertIconAboveNPC(NPC* npc) {
-    if (!npc || !alertIcon) return;
-    float x, y;
-    npc->GetPosition(x, y);
-    float worldHeight = npc->GetHeight() * npc->GetScale();
-
-    static float t = 0.0f;
-    t += 0.05f;
-    float bob = sinf(t) * 4.0f;
-
-    alertIcon->SetPosition(x - g_camera.x, y + (worldHeight * 0.5f) + 22.0f + bob);
-    alertIcon->Draw();
-}
-
-bool IsPlayerNearNPC() {
-    float px, py, nx, ny;
-    myPlayer->GetPosition(px, py);
-    activeNPC = nullptr;
-    const float playerRadius = 20.0f;
-    const float npcRadius = 100.0f;
-    for (NPC* npc : allNPCs) {
-        npc->GetPosition(nx, ny);
-        float dx = px - nx;
-        float dy = py - ny;
-        if (sqrtf(dx * dx + dy * dy) < (playerRadius + npcRadius)) {
-            activeNPC = npc;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool IsPlayerNearLadder() {
-    float px, py;
-    myPlayer->GetPosition(px, py);
-    return fabsf(px - myLevel->GetLadderX()) < 120.0f;
-}
-void LoadCar(int carNumber) {
-    for (NPC* npc : allNPCs) {
-        delete npc;
-    }
-    allNPCs.clear();
-    activeNPC = nullptr;
-
-    if (carNumber == 1) {
-        allNPCs.push_back(new NPC(".\\TestData\\rosamund_idle.png", "Rosamund", 11, rosamundLoot, 790.0f, 330.0f, 0.19f));
-        allNPCs.push_back(new NPC(".\\TestData\\granny_idle.png", "Granny", 8, grannyLoot, 1750.0f, 310.0f, 0.16f));
-        allNPCs.push_back(new NPC(".\\TestData\\randy_idle.png", "Randy", 14, randyLoot, 320.0f, 330.0f, 0.2f));
-    }
-    else if (carNumber == 2) {
-        allNPCs.push_back(new NPC(".\\TestData\\npc_sprites.png", "Helene", 10, heleneLoot, 400.0f, 330.0f, 0.2f, 2, 4, 0, 2));
-        allNPCs.push_back(new NPC(".\\TestData\\npc_sprites.png", "Magda", 12, magdaLoot, 900.0f, 330.0f, 0.2f, 2, 4, 1, 2));
-        allNPCs.push_back(new NPC(".\\TestData\\npc_sprites.png", "Charles", 13, charlesLoot, 1900.0f, 330.0f, 0.2f, 2, 4, 3, 2));
-    }
-    else if (carNumber == 3) {
-        allNPCs.push_back(new NPC(".\\TestData\\npc_sprites.png", "Lupine", 17, lupineLoot, 1400.0f, 330.0f, 0.2f, 2, 4, 2, 2));
-    }
-
-    myPlayer->SetPosition(200.0f, 250.0f);
-    g_camera.x = 0.0f;
-}
+NPCManager* myNPCManager;
 
 
 void Init() {
     App::PlaySound(".\\TestData\\audio\\jazz.wav", DSBPLAY_LOOPING);
-    App::SetSoundVolume(".\\TestData\\audio\\jazz.wav", 0.2f);  // quiet background music
+    App::SetSoundVolume(".\\TestData\\audio\\jazz.wav", 0.2f);  
 
     App::PlaySound(".\\TestData\\audio\\train_sounds.wav", DSBPLAY_LOOPING);
     App::SetSoundVolume(".\\TestData\\audio\\train_sounds.wav", 0.7f);
@@ -182,14 +157,24 @@ void Init() {
     myRooftop = new Rooftop();
     myMainMenu = new MainMenu();
     myIntro = new Intro();
-    // load the first car ! move this to own class eventually ?
-    LoadCar(1);
+    myNPCManager = new NPCManager();
+    myNPCManager->SetAlertIcon(alertIcon);
+    myNPCManager->LoadCar(1, myPlayer, g_camera.x);
 
-    // IMFellEnglish-Regular
-    // UncialAntiqua-Regular
+    for (int i = 0; i < 4; i++) {
+        std::string path = ".\\TestData\\transition_" + std::to_string(i + 1) + ".png";
+        g_transitionFrames[i] = App::CreateSprite(path.c_str(), 1, 1);
+        g_transitionFrames[i]->SetPosition(512.0f, 415.0f);
+        g_transitionFrames[i]->SetScale(0.7f);
+    }
 
-    //App::InitFont(".\\TestData\\IMFellEnglish-Regular.ttf", 18.0f, 0);  // dialogue = 0
-    //App::InitFont(".\\TestData\\UncialAntiqua-Regular.ttf", 28.0f, 1);  // titles = 1
+    
+    
+
+    
+    
+
+    if (SKIP_TO_OUTRO && !myOutro) myOutro = new Outro();
 }
 
 void ResetGameState() {
@@ -201,16 +186,56 @@ void ResetGameState() {
     GearManager::GetInstance().Reset();
     g_clock->Reset();
     myLevel->Reset();
-    LoadCar(1);
+    myNPCManager->LoadCar(1, myPlayer, g_camera.x);
     g_firstRequestDismissed = false;
 }
 
-// UPDATE!! ***********************************************************************
+
 void Update(float deltaTime) {
-    // check for outro
-    if (GearManager::GetInstance().IsComplete() && g_scene != SceneState::OUTRO) {
-        g_scene = SceneState::OUTRO;
-        if (!myOutro) myOutro = new Outro();
+    if (GearManager::GetInstance().IsComplete() && g_scene != SceneState::OUTRO && g_scene != SceneState::OUTRO_INTRO) {
+        g_scene = SceneState::OUTRO_INTRO;
+        g_outroIntroTimer   = 0.0f;
+        g_outroIntroPhase   = 0;
+        g_outroIntroText    = "";
+        g_outroIntroFull[0] = "You have brought the goblin his final request...";
+        g_outroIntroFull[1] = "You are awoken in the night...";
+        g_outroIntroIdx     = 0;
+        g_outroTypeTimer    = 0.0f;
+        g_outroTypeIndex    = 0;
+    }
+
+    if (g_scene == SceneState::OUTRO_INTRO) {
+        float dt = deltaTime / 1000.0f;
+        g_outroIntroTimer += dt;
+
+        
+        const char* full = g_outroIntroFull[g_outroIntroIdx];
+        int fullLen = (int)strlen(full);
+        if (g_outroTypeIndex < fullLen) {
+            g_outroTypeTimer += dt;
+            if (g_outroTypeTimer >= OUTRO_TYPE_SPEED) {
+                g_outroTypeTimer = 0.0f;
+                g_outroIntroText += full[g_outroTypeIndex];
+                g_outroTypeIndex++;
+            }
+        }
+
+        
+        bool typingDone = (g_outroTypeIndex >= fullLen);
+        if (typingDone && g_outroIntroTimer > OUTRO_INTRO_PAUSE) {
+            if (g_outroIntroIdx < 1) {
+                g_outroIntroIdx++;
+                g_outroIntroTimer = 0.0f;
+                g_outroIntroText  = "";
+                g_outroTypeTimer  = 0.0f;
+                g_outroTypeIndex  = 0;
+            } else {
+                
+                if (!myOutro) myOutro = new Outro();
+                g_scene = SceneState::OUTRO;
+            }
+        }
+        return;
     }
 
     if (g_scene == SceneState::OUTRO) {
@@ -235,7 +260,7 @@ void Update(float deltaTime) {
         return;
     }
 
-    // load fonts
+    
 
     if (!g_fontsLoaded) {
         App::InitFont(".\\TestData\\fonts\\IMFellEnglish-Regular.ttf", 24.0f, 0);
@@ -243,32 +268,54 @@ void Update(float deltaTime) {
         g_fontsLoaded = true;
     }
 
-    // main menu
+    
     if (g_scene == SceneState::MAIN_MENU) {
         myMainMenu->Update(deltaTime);
         if (myMainMenu->ShouldStart()) {
             g_scene = SceneState::INTRO;
+        } else if (myMainMenu->ShouldExit()) {
+            PostQuitMessage(0);
         }
         return;
     }
 
-    // intro
     if (g_scene == SceneState::INTRO) {
         myIntro->Update(deltaTime);
         if (myIntro->IsDone()) {
-            g_scene = SceneState::TRAIN_INTERIOR;
+            g_scene = SceneState::STAT_SELECT;
+            if (!myStatSelect) myStatSelect = new StatSelect();
         }
         return;
     }
 
-// pause menu & request window logic
+    if (g_scene == SceneState::STAT_SELECT) {
+        myStatSelect->Update(deltaTime);
+        if (myStatSelect->IsDone()) {
+            g_scene = SceneState::TRAIN_INTERIOR;
+            delete myStatSelect;
+            myStatSelect = nullptr;
+        }
+        return;
+    }
+
+
     bool escDown = App::IsKeyPressed(VK_ESCAPE);
     if (escDown && !g_escWasDown) {
         if (!g_firstRequestDismissed) {
             g_firstRequestDismissed = true;
         }
-        else if (!myUI->IsAnyUIOpen() && !myRooftop->IsTrading()) {
-            g_isPaused = !g_isPaused;
+        else if (myUI->IsAnyUIOpen()) {
+            myUI->CloseUI();
+        }
+        else if (myRooftop->IsTrading() || myRooftop->IsRequestBoardOpen()) {
+            myRooftop->CloseUI();
+        }
+        else {
+            if (g_isPaused && myPauseMenu->IsControlsTabOpen()) {
+                myPauseMenu->CloseControlsTab();
+            } else {
+                g_isPaused = !g_isPaused;
+            }
         }
     }
     g_escWasDown = escDown;
@@ -278,7 +325,7 @@ void Update(float deltaTime) {
         return;
     }
 
-    // rooftop
+    
     if (g_scene == SceneState::ROOFTOP) {
         g_clock->Update(deltaTime);
         float px, py;
@@ -290,8 +337,11 @@ void Update(float deltaTime) {
             g_clock->AdvanceToMorning();
             myRooftop->NotifyNewDay();
             myLevel->ResetHeat();
+            myLevel->SetNPCAlerted(false);
+            myNPCManager->ResetAlerts();
+            myPatroller->Reset();
 
-            // day limit check
+            
             if (g_clock->GetDay() > MAX_DAYS && !GearManager::GetInstance().IsComplete()) {
                 g_scene = SceneState::BAD_OUTRO;
                 if (!myBadOutro) myBadOutro = new BadOutro();
@@ -299,13 +349,14 @@ void Update(float deltaTime) {
         }
 
         if (myRooftop->JustSatByFire()) {
-            g_clock->SetHour(17); // jump to night
+            g_clock->SetHour(17); 
         }
 
         g_nearHatch = myRooftop->IsPlayerNearHatch(px);
         if (g_nearHatch && App::IsKeyPressed(VK_DOWN)) {
             myPlayer->SetPosition(myLevel->GetLadderX(), 250.0f);
             g_scene = SceneState::TRAIN_INTERIOR;
+            return;
         }
 
         if (!myRooftop->IsTrading()) {
@@ -313,6 +364,24 @@ void Update(float deltaTime) {
         }
         return;
     }
+
+    if (g_scene == SceneState::CAR_TRANSITION) {
+        g_transitionTimer += deltaTime / 1000.0f;
+        if (g_transitionTimer >= 0.1f) {
+            g_transitionTimer = 0.0f;
+            g_transitionCurrentFrame++;
+            
+            if (g_transitionCurrentFrame == 4) {
+                myNPCManager->LoadCar(g_nextCarToLoad, myPlayer, g_camera.x);
+            }
+            if (g_transitionCurrentFrame >= 8) {
+                g_scene = SceneState::TRAIN_INTERIOR;
+            }
+        }
+        return;
+    }
+
+
 
     g_clock->Update(deltaTime);
     
@@ -323,7 +392,6 @@ void Update(float deltaTime) {
             float flash = fmodf(g_caughtAnimTimer, 0.2f) < 0.1f ? 1.0f : 0.3f;
             myPlayer->SetColor(1.0f, flash * 0.45f, flash * 0.45f);
 
-            // camera shake? or should i do sprite shake
             float shake = sinf(g_caughtAnimTimer * 40.0f) * 9.0f;
             g_camera.x += shake;
             return;
@@ -338,8 +406,23 @@ void Update(float deltaTime) {
         return;
     }
 
+    if (myCharismaticMenu) {
+        bool dismissed = false;
+        myCharismaticMenu->Update(dismissed);
+        if (dismissed) {
+            delete myCharismaticMenu;
+            myCharismaticMenu = nullptr;
+        }
+        return;
+    }
+
+    if (myPatroller->JustHadEscape()) {
+        myCharismaticMenu = new CharismaticMenu();
+        myCharismaticMenu->Show(myPatroller->GetLivesRemaining());
+    }
+
             size_t oldInvSize = playerInventory.size();
-            myUI->Update(deltaTime, activeNPC, playerInventory);
+            myUI->Update(deltaTime, myNPCManager->GetActiveNPC(), playerInventory);
             if (playerInventory.size() > oldInvSize) {
                 myLevel->IncreaseHeat();
             }
@@ -348,15 +431,17 @@ void Update(float deltaTime) {
         float px, py;
         myPlayer->GetPosition(px, py);
 
-        // ticketman logic
+        
         bool changeCar = false;
         int currentGold = myUI->GetGoldAmount();
         myLevel->UpdateGuard(px, currentGold, changeCar, deltaTime);
         myUI->SetGoldAmount(currentGold);
 
         if (changeCar) {
-            int nextCar = myLevel->GetCurrentCar();
-            LoadCar(nextCar);
+            g_nextCarToLoad = myLevel->GetCurrentCar();
+            g_scene = SceneState::CAR_TRANSITION;
+            g_transitionTimer = 0.0f;
+            g_transitionCurrentFrame = 0;
             myPlayer->GetPosition(px, py);
         }
 
@@ -365,7 +450,7 @@ void Update(float deltaTime) {
             if (g_camera.x < 0.0f) g_camera.x = 0.0f;
             if (g_camera.x > 3225.0f - 1024.0f) g_camera.x = 3225.0f - 1024.0f;
 
-            // gfetting caught criteria
+            
             bool inWalkingNPCVision = myLevel->IsPlayerInWalkingNPCVision(px, py);
             bool playerInClump = myCrowdManager->IsPlayerInClump(px, py) && myPlayer->IsHiding() && !inWalkingNPCVision;
 
@@ -381,20 +466,19 @@ void Update(float deltaTime) {
             myCrowdManager->Update(deltaTime);
             myPlayer->Update(deltaTime);
 
-            for (NPC* npc : allNPCs) {
-                npc->Update(deltaTime);
-            }
+            myNPCManager->Update(deltaTime);
 
-            g_nearLadder = IsPlayerNearLadder() && !myUI->inPickpocketUI;
+            g_nearLadder = myLevel->IsPlayerNearLadder(px) && !myUI->inPickpocketUI;
             if (g_nearLadder && App::IsKeyPressed(VK_UP)) {
                 myPlayer->SetPosition(myRooftop->GetSpawnX(), myRooftop->GetSpawnY());
                 g_scene = SceneState::ROOFTOP;
                 return;
             }
 
-            bool nearNPC = IsPlayerNearNPC();
+            bool nearNPC = myNPCManager->IsPlayerNearNPC(myPlayer);
 
             if (nearNPC && !myUI->inPickpocketUI) {
+                NPC* activeNPC = myNPCManager->GetActiveNPC();
                 if (activeNPC && activeNPC->GetIsAlerted()) {
                     App::PrintTTF(10, 140, "Can't steal from an alert NPC", 0.239f, 0.0f, 0.0f, 0);
                     if (myPatroller->IsInactive()) myPatroller->Activate();
@@ -417,7 +501,7 @@ void Update(float deltaTime) {
                 myUI->CloseUI();
             }
 
-            myUI->Update(deltaTime, activeNPC, playerInventory);
+            myUI->Update(deltaTime, myNPCManager->GetActiveNPC(), playerInventory);
 
             g_camera.x = px - 512.0f;
             if (g_camera.x < 0.0f) g_camera.x = 0.0f;
@@ -428,11 +512,20 @@ void Update(float deltaTime) {
     }
 }
 
-// RENDER!! *************************************************************************
+
 
 void Render() {
     if (g_scene == SceneState::BAD_OUTRO) {
         myBadOutro->Render();
+        return;
+    }
+    if (g_scene == SceneState::OUTRO_INTRO) {
+        
+        float textAlpha = 1.0f;
+        if (g_outroIntroTimer < OUTRO_INTRO_FADE) {
+            textAlpha = g_outroIntroTimer / OUTRO_INTRO_FADE;
+        }
+        App::PrintTTF(174, 420, g_outroIntroText.c_str(), textAlpha, textAlpha, textAlpha, 0);
         return;
     }
     if (g_scene == SceneState::OUTRO) {
@@ -449,14 +542,35 @@ void Render() {
         return;
     }
 
+    if (g_scene == SceneState::STAT_SELECT) {
+        if (myStatSelect) myStatSelect->Render();
+        return;
+    }
+    
+    if (g_scene == SceneState::CAR_TRANSITION) {
+        
+        int frame = g_transitionCurrentFrame % 4;
+        if (g_transitionCurrentFrame < 8) {
+            g_transitionFrames[frame]->Draw();
+        }
+        return;
+    }
+
+
+
     if (g_scene == SceneState::ROOFTOP) {
         myRooftop->Render(g_clock->IsDay());
 
-        if (!myRooftop->IsSleeping()) {
-            myPlayer->Render(0.0f, 0.0f, false);
-        }
-        g_clock->Render();
         float fade = myRooftop->GetFadeBrightness();
+
+        if (!myRooftop->IsSleeping() && !myRooftop->IsSittingByFire()) {
+            myPlayer->SetColor(fade, fade, fade);
+            myPlayer->Render(0.0f, 0.0f, false);
+            myPlayer->SetColor(1.0f, 1.0f, 1.0f);
+        }
+
+        myRooftop->RenderOverlayText(g_nearHatch, g_clock->IsDay());
+        g_clock->Render();
         char timeBuf[64];
         int daysLeft = MAX_DAYS - g_clock->GetDay() + 1;
         if (daysLeft < 0) daysLeft = 0;
@@ -468,11 +582,28 @@ void Render() {
         App::PrintTTF(760, 730, timeBuf, fade, fade, fade, 1);
 
         if (g_nearHatch && !myRooftop->IsTrading() && !myRooftop->IsSleeping()) {
-            App::PrintTTF(10, 60, "Press Down to climb back down", fade * 0.239f, 0.0f, 0.0f, 0);
+            App::PrintTTF(10, 60, "Press Down to climb back down", fade * 1.0f, 1.0f, 1.0f, 0);
         }
 
         myRooftop->RenderPlant();
         myRooftop->RenderTradeUI(playerInventory);
+
+        if (fade >= 1.0f) {
+            g_loreIndex = rand() % 13;
+        }
+
+        if (fade < 1.0f) {
+            float textAlpha = 1.0f - fade;
+            if (myRooftop->IsSittingByFire()) {
+                App::PrintTTF(150, 400, "The sound of the train and muffled conversation lull you into a trance-like state...", textAlpha, textAlpha, textAlpha, 0);
+            } else if (myRooftop->IsSleepTransition()) {
+                App::PrintTTF(150, 420, LORE_STRINGS[g_loreIndex][0], textAlpha, textAlpha, textAlpha, 0);
+                App::PrintTTF(150, 390, LORE_STRINGS[g_loreIndex][1], textAlpha, textAlpha, textAlpha, 0);
+                if (LORE_STRINGS[g_loreIndex][2][0] != '\0') {
+                    App::PrintTTF(150, 360, LORE_STRINGS[g_loreIndex][2], textAlpha, textAlpha, textAlpha, 0);
+                }
+            }
+        }
 
         if (g_isPaused) {
             myPauseMenu->Render();
@@ -484,6 +615,7 @@ void Render() {
     myLevel->RenderBackground(g_camera.x, tod);
 
 
+    NPC* activeNPC = myNPCManager->GetActiveNPC();
     if (activeNPC && !myUI->inPickpocketUI) {
         App::PrintTTF(10, 60, "Press Enter to check their pockets...", 0.239f, 0.0f, 0.0f, 0);
     }
@@ -494,16 +626,8 @@ void Render() {
 
     myCrowdManager->Render(g_camera.x, g_camera.y);
 
-    for (NPC* npc : allNPCs) {
-        bool targeted = (npc == activeNPC && !myUI->inPickpocketUI);
-        npc->Render(g_camera.x, g_camera.y, targeted);
-    }
-
-    for (NPC* npc : allNPCs) {
-        if (npc->GetIsAlerted()) {
-            DrawAlertIconAboveNPC(npc);
-        }
-    }
+    myNPCManager->Render(g_camera.x, g_camera.y, myUI->inPickpocketUI);
+    myNPCManager->DrawAlertIcons(g_camera.x);
 
     float px, py;
     myPlayer->GetPosition(px, py);
@@ -514,7 +638,7 @@ void Render() {
     myPatroller->Render(g_camera.x, g_camera.y);
 
 
-    // new rendering bit with red cone
+    
     myPlayer->GetPosition(px, py);
     bool isCollidingWithCone = myLevel->IsPlayerInWalkingNPCVision(px, py);
     myLevel->RenderWalkingNPCVision(g_camera.x, g_camera.y, isCollidingWithCone);
@@ -531,7 +655,7 @@ void Render() {
     }
     App::PrintTTF(760, 730, timeBuf, 1.0f, 1.0f, 1.0f, 1);
 
-    // new ticketman logic
+    
     myLevel->RenderGuardUI();
     myPlayer->GetPosition(px, py);
     if (myLevel->IsPlayerNearGuard(px) && !myLevel->IsGuardUIOpen()) {
@@ -548,7 +672,11 @@ void Render() {
         return;
     }
 
-    // requests
+    if (myCharismaticMenu) {
+        myCharismaticMenu->Render();
+    }
+
+    
     if (!g_firstRequestDismissed) {
 
         m_dialogue_bg->SetPosition(500.0f, 400.0f);
@@ -569,6 +697,7 @@ void Render() {
 }
 
 void Shutdown() {
+    for (int i = 0; i < 4; i++) delete g_transitionFrames[i];
     delete myBadOutro;
     delete m_dialogue_bg;
     delete alertIcon;
@@ -581,9 +710,10 @@ void Shutdown() {
     delete myPatroller;
     delete myMainMenu;
     delete myIntro;
+    delete myStatSelect;
     delete myPauseMenu;
     delete myCaughtMenu;
+    delete myCharismaticMenu;
     delete myOutro;
-    for (NPC* npc : allNPCs) delete npc;
-    allNPCs.clear();
+    delete myNPCManager;
 }

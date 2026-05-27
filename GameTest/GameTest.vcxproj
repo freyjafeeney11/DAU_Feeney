@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -178,56 +178,82 @@
   <ItemGroup>
     <ClInclude Include="App\app.h" />
     <ClInclude Include="App\AppSettings.h" />
+    <ClInclude Include="App\DirectSound.h" />
     <ClInclude Include="App\main.h" />
+    <ClInclude Include="App\mydirectsound.h" />
     <ClInclude Include="App\SimpleController.h" />
     <ClInclude Include="App\SimpleSound.h" />
     <ClInclude Include="App\SimpleSprite.h" />
+    <ClInclude Include="App\stb_truetype.h" />
+    <ClInclude Include="BadOutro.h" />
     <ClInclude Include="Campsite.h" />
+    <ClInclude Include="CaughtMenu.h" />
     <ClInclude Include="CrowdManager.h" />
     <ClInclude Include="GameClock.h" />
+    <ClInclude Include="GearManager.h" />
     <ClInclude Include="glut\include\GL\freeglut.h" />
     <ClInclude Include="glut\include\GL\freeglut_ext.h" />
     <ClInclude Include="glut\include\GL\freeglut_std.h" />
     <ClInclude Include="Intro.h" />
+    <ClInclude Include="Item.h" />
     <ClInclude Include="Level.h" />
     <ClInclude Include="MainMenu.h">
       <DeploymentContent>false</DeploymentContent>
     </ClInclude>
     <ClInclude Include="NPC.h" />
+    <ClInclude Include="NPCManager.h" />
+    <ClInclude Include="Outro.h" />
     <ClInclude Include="Patroller.h" />
+    <ClInclude Include="PauseMenu.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="stb_image\stb_image.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
+    <ClInclude Include="App\stdafx.h" />
+    <ClInclude Include="App\targetver.h" />
     <ClInclude Include="UIManager.h" />
     <ClInclude Include="UserControls.h" />
+    <ClInclude Include="StatSelect.h" />
+    <ClInclude Include="PlayerArchetype.h" />
+    <ClInclude Include="CharismaticMenu.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App\app.cpp" />
+    <ClCompile Include="App\DirectSound.cpp" />
     <ClCompile Include="App\main.cpp" />
     <ClCompile Include="App\SimpleController.cpp" />
     <ClCompile Include="App\SimpleSound.cpp" />
     <ClCompile Include="App\SimpleSprite.cpp" />
+    <ClCompile Include="BadOutro.cpp" />
     <ClCompile Include="Campsite.cpp" />
+    <ClCompile Include="CaughtMenu.cpp" />
     <ClCompile Include="CrowdManager.cpp" />
     <ClCompile Include="GameClock.cpp" />
     <ClCompile Include="GameTest.cpp" />
+    <ClCompile Include="GearManager.cpp" />
     <ClCompile Include="Intro.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="MainMenu.cpp">
       <DeploymentContent>false</DeploymentContent>
     </ClCompile>
     <ClCompile Include="NPC.cpp" />
+    <ClCompile Include="NPCManager.cpp" />
+    <ClCompile Include="Outro.cpp" />
     <ClCompile Include="Patroller.cpp" />
+    <ClCompile Include="PauseMenu.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="stb_image\stb_image.cpp" />
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="App\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="UIManager.cpp" />
+    <ClCompile Include="StatSelect.cpp" />
+    <ClCompile Include="PlayerArchetype.cpp" />
+    <ClCompile Include="CharismaticMenu.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Rain.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

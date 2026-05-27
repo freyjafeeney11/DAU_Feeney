@@ -4,7 +4,7 @@
 #include <math.h>
 #include <cstdio>
 
-// ── Fixed daily requests ──────────────────────────────────────────────────────
+
 const DailyRequest Rooftop::ms_requests[7] = {
     {
         "You must bring me this item before nightfall..",
@@ -13,32 +13,32 @@ const DailyRequest Rooftop::ms_requests[7] = {
     },
     {
         "I'll admit I have a big nose.",
-        "Two strangers on a beach. Or were they? Let's read about it.",
+        "Inked pages reveal the tale of a great love.. of pigeons.",
         { ITEM_BOOK }
     },
     {
         "Jucily incriminating...I'm salivating at the thought!",
-        "Encrypted. Even its owner doesn't know if they want it found.",
+        "Encrypted. Of course it is.",
         { ITEM_FLASHDRIVE }
     },
     {
         "This one's quite sad.. but I'm allergic.",
-        "Jiji never came home. Someone still carries the proof of that.",
+        "Jiji never came home, and never liked wearing this.",
         { ITEM_COLLAR }
     },
     {
         "Who knows what they're doing with this one.. I want it!",
-        "Preserved out of love, or something stranger. Whiskers intact.",
+        "Preserved out of love or something stranger. Whiskers intact.",
         { ITEM_RAT }
     },
     {
         "For me..? You shouldn't have!",
-        "'Forgive me.' The roses are still fresh. The wound, less so.",
+        "Forgive-Me-Nots! They smell lovely, thorns and all.",
         { ITEM_BOUQUET }
     },
     {
-        "Wonder where this came from... I need it for my collection.",
-        "Reign Stumpen painted it. The young curator would sooner let the train crash.",
+        "I must have this for my collection...",
+        "An original Reign Stumpen. Its bearer would sooner let the train crash.",
         { ITEM_PAINTING }
     },
 };
@@ -49,7 +49,7 @@ const DailyRequest& Rooftop::GetRequest(int index) {
     return ms_requests[index];
 }
 
-// ── Constructor ───────────────────────────────────────────────────────────────
+
 Rooftop::Rooftop() {
     m_justSlept = false;
     m_justTraded = false;
@@ -143,7 +143,7 @@ Rooftop::Rooftop() {
     m_campCollar->SetScale(0.6f);
 
     m_campRat = App::CreateSprite(".\\TestData\\rat_camp.png", 1, 1);
-    m_campRat->SetPosition(512.0f, 400.0f);
+    m_campRat->SetPosition(508.0f, 400.0f);
     m_campRat->SetScale(0.6f);
 
     m_campBouquet = App::CreateSprite(".\\TestData\\bouquet_camp.png", 1, 1);
@@ -207,7 +207,7 @@ Rooftop::~Rooftop() {
     if (m_watch_sprite) delete m_watch_sprite;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+
 void Rooftop::NotifyNewDay() {
     m_requestBoardOpen = true;
     m_iBoardKeyDown = true;
@@ -217,7 +217,6 @@ void Rooftop::NotifyNewDay() {
 
 void Rooftop::Reset() {
     m_tradeState = TradeState::NONE;
-    m_stagedItems.clear();
     m_requestBoardOpen = false;
     m_iBoardKeyDown = false;
     m_selectedItemIndex = 0;
@@ -232,6 +231,13 @@ void Rooftop::Reset() {
     m_showDayMessage = false;
 }
 
+void Rooftop::CloseUI() {
+    m_requestBoardOpen = false;
+    if (m_tradeState != TradeState::NONE && m_tradeState != TradeState::SLEEP_TRANSITION) {
+        m_tradeState = TradeState::NONE;
+    }
+}
+
 std::vector<int> Rooftop::GetTradeableIndices(const std::vector<Item>& playerInventory) const {
     std::vector<int> result;
     for (int i = 0; i < (int)playerInventory.size(); i++) {
@@ -243,14 +249,6 @@ std::vector<int> Rooftop::GetTradeableIndices(const std::vector<Item>& playerInv
     return result;
 }
 
-bool Rooftop::StagedMatchesRequest() const {
-    int gearCount = GearManager::GetInstance().GetGearCount();
-    if (gearCount >= 7) return false;
-    const DailyRequest& req = ms_requests[gearCount];
-
-    if ((int)m_stagedItems.size() != (int)req.requiredItems.size()) return false;
-    return true; // actual ID check done in Update
-}
 
 void Rooftop::DrawItemIcon(int itemId, float x, float y) {
     CSimpleSprite* s = nullptr;
@@ -299,7 +297,7 @@ bool Rooftop::IsPlayerNearHatch(float px) const {
     return fabsf(px - HATCH_X) < HATCH_RADIUS;
 }
 
-// ── Update ────────────────────────────────────────────────────────────────────
+
 void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerInventory, bool isDay) {
     float dt = deltaTime / 1000.0f;
 
@@ -309,7 +307,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
     m_playerInTentZone = (playerX > TENT_TRIGGER_X);
     m_campfire->Update(deltaTime);
 
-    // ── I key: toggle request board when not actively trading ──
     bool iKeyDown = App::IsKeyPressed('I');
     if (iKeyDown && !m_iBoardKeyDown && m_tradeState == TradeState::NONE) {
         m_requestBoardOpen = !m_requestBoardOpen;
@@ -321,7 +318,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
         m_requestBoardOpen = false;
     }
 
-    // ── Fire sit transition ──
     if (m_tradeState == TradeState::FIRE_SIT) {
         m_completeTimer += dt;
         if (m_completeTimer >= FIRE_SIT_DURATION) {
@@ -332,7 +328,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
         return;
     }
 
-    // ── Sleep transition ──
     if (m_tradeState == TradeState::SLEEP_TRANSITION) {
         m_completeTimer += dt;
         m_playerSleeping = true;
@@ -345,7 +340,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
         return;
     }
 
-    // ── Complete display ──
     if (m_tradeState == TradeState::COMPLETE) {
         m_completeTimer += dt;
         if (m_completeTimer >= COMPLETE_DISPLAY_TIME) {
@@ -356,7 +350,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
         return;
     }
 
-    // ── Failed display ──
     if (m_tradeState == TradeState::FAILED) {
         m_completeTimer += dt;
         if (m_completeTimer >= COMPLETE_DISPLAY_TIME) {
@@ -367,7 +360,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
         return;
     }
 
-    // ── Near fire prompt (day only, not trading) ──
     m_playerNearFire = isDay && fabsf(playerX - FIRE_X) < FIRE_TRIGGER_RADIUS
                        && m_tradeState == TradeState::NONE;
 
@@ -381,7 +373,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
         return;
     }
 
-    // ── NONE ──
     if (m_tradeState == TradeState::NONE) {
         if (!m_playerInTentZone) m_showDayMessage = false;
 
@@ -401,7 +392,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
             }
         }
     }
-    // ── PROMPT ──
     else if (m_tradeState == TradeState::PROMPT) {
         if (backDown) {
             m_tradeState = TradeState::NONE;
@@ -421,7 +411,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
             if (m_promptChoice == 0) {
                 m_tradeState = TradeState::SELECTING;
                 m_selectedItemIndex = 0;
-                m_stagedItems.clear();
             }
             else {
                 m_tradeState = TradeState::SLEEP_TRANSITION;
@@ -430,11 +419,9 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
             }
         }
     }
-    // ── SELECTING ──
     else if (m_tradeState == TradeState::SELECTING) {
         if (backDown) {
             m_tradeState = TradeState::NONE;
-            m_stagedItems.clear();
         }
         else {
             std::vector<int> tradeable = GetTradeableIndices(playerInventory);
@@ -470,7 +457,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
                 !App::IsKeyPressed(VK_LEFT) && !App::IsKeyPressed(VK_RIGHT))
                 m_navKeyDown = false;
 
-            // clamp
             if (maxIndex < 0) m_selectedItemIndex = 0;
             else if (m_selectedItemIndex > maxIndex) m_selectedItemIndex = maxIndex;
 
@@ -479,15 +465,12 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
                 if (!tradeable.empty() && m_selectedItemIndex <= maxIndex) {
                     App::PlaySound(".\\TestData\\audio\\confirm.wav", false);
                     App::SetSoundVolume(".\\TestData\\audio\\confirm.wav", 0.4f);
-                    m_stagedItems.clear();
-                    m_stagedItems.push_back(tradeable[m_selectedItemIndex]);
                     m_tradeState = TradeState::CONFIRMING;
                     m_confirmChoice = 0;
                 }
             }
         }
     }
-    // ── CONFIRMING ──
     else if (m_tradeState == TradeState::CONFIRMING) {
         if (backDown) {
             m_tradeState = TradeState::SELECTING;
@@ -505,51 +488,26 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
             if (enterDown && !m_tradeEnterDown) {
                 m_tradeEnterDown = true;
                 if (m_confirmChoice == 0) {
-                    // check if staged items match the request
-                    int gearCount = GearManager::GetInstance().GetGearCount();
-                    bool match = false;
-                    if (gearCount < 7) {
-                        const DailyRequest& req = ms_requests[gearCount];
-                        if ((int)m_stagedItems.size() == (int)req.requiredItems.size()) {
-                            // check IDs match (order-insensitive)
-                            std::vector<int> stagedIds;
-                            for (int idx : m_stagedItems) {
-                                stagedIds.push_back(playerInventory[idx].id);
+                    std::vector<int> tradeable = GetTradeableIndices(playerInventory);
+                    if (!tradeable.empty() && m_selectedItemIndex < (int)tradeable.size()) {
+                        int gearCount = GearManager::GetInstance().GetGearCount();
+                        if (gearCount < 7) {
+                            const DailyRequest& req = ms_requests[gearCount];
+                            int selectedInvIdx = tradeable[m_selectedItemIndex];
+                            
+                            if (playerInventory[selectedInvIdx].id == req.requiredItems[0]) {
+                                playerInventory.erase(playerInventory.begin() + selectedInvIdx);
+                                GearManager::GetInstance().AddGear();
+                                m_justTraded = true;
+                                m_tradeState = TradeState::COMPLETE;
+                                m_completeTimer = 0.0f;
+                                m_selectedItemIndex = 0;
                             }
-                            std::vector<int> reqCopy = req.requiredItems;
-                            match = true;
-                            for (int rid : reqCopy) {
-                                bool found = false;
-                                for (int i = 0; i < (int)stagedIds.size(); i++) {
-                                    if (stagedIds[i] == rid) {
-                                        stagedIds.erase(stagedIds.begin() + i);
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found) { match = false; break; }
+                            else {
+                                m_tradeState = TradeState::FAILED;
+                                m_completeTimer = 0.0f;
                             }
                         }
-                    }
-
-                    if (match) {
-                        // remove staged items from inventory
-                        std::vector<int> sortedStaged = m_stagedItems;
-                        for (int i = (int)sortedStaged.size() - 1; i >= 0; i--) {
-                            playerInventory.erase(playerInventory.begin() + sortedStaged[i]);
-                        }
-                        m_stagedItems.clear();
-                        GearManager::GetInstance().AddGear();
-                        m_justTraded = true;
-                        m_tradeState = TradeState::COMPLETE;
-                        m_completeTimer = 0.0f;
-                        m_selectedItemIndex = 0;
-                    }
-                    else {
-                        // wrong items — soft fail, lose the day
-                        m_stagedItems.clear();
-                        m_tradeState = TradeState::FAILED;
-                        m_completeTimer = 0.0f;
                     }
                 }
                 else {
@@ -568,7 +526,6 @@ void Rooftop::Update(float deltaTime, float playerX, std::vector<Item>& playerIn
     }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
 void Rooftop::Render(bool isDay) {
     float b = GetFadeBrightness();
 
@@ -625,24 +582,6 @@ void Rooftop::Render(bool isDay) {
             m_campCollar->Draw();
         }
     }
-
-    if (m_playerInTentZone && m_tradeState == TradeState::NONE) {
-        if (isDay) {
-            App::PrintTTF(750, 170, "The goblin is out...", 0.8f, 0.8f, 0.8f, 0);
-            if (m_showDayMessage)
-                App::PrintTTF(750, 145, "You can only trade at night.", 0.239f, 0.0f, 0.0f, 0);
-        }
-        else {
-            App::PrintTTF(750, 170, "Press Enter to trade or sleep", 1.0f, 1.0f, 1.0f, 0);
-        }
-    }
-
-    // request board hint
-    if (m_tradeState == TradeState::NONE) {
-        App::PrintTTF(10, 30, "Press I to check today's request", 0.7f, 0.7f, 0.7f, 0);
-    }
-
-    // request board overlay
     if (m_requestBoardOpen && m_tradeState == TradeState::NONE) {
     }
 }
@@ -663,18 +602,13 @@ void Rooftop::RenderRequestBoard() const {
 
     App::PrintTTF(200, 440, "Today's riddle:", 0.239f, 0.0f, 0.0f, 1);
     App::PrintTTF(200, 410, req.riddle.c_str(), 1.0f, 1.0f, 1.0f, 0);
-
-    // show required item count as a hint
-    char needed[64];
-    sprintf(needed, "Items needed: %d", (int)req.requiredItems.size());
-    App::PrintTTF(200, 380, needed, 0.239f, 0.0f, 0.0f, 0);
 }
 
 void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
     if (m_tradeState == TradeState::NONE) {
         if (m_playerNearFire) {
-            App::PrintTTF(400, 170, "Sit by the fire until nightfall?", 1.0f, 1.0f, 1.0f, 0);
-            App::PrintTTF(400, 145, "Press Enter", 0.403f, 1.0f, 0.372f, 0);
+            App::PrintTTF(10, 60, "Sit by the fire until nightfall?", 1.0f, 1.0f, 1.0f, 0);
+            App::PrintTTF(10, 45, "Press Enter", 1.0f, 1.0f, 1.0f, 0);
         }
         if (m_requestBoardOpen) RenderRequestBoard();
         return;
@@ -693,20 +627,20 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
     }
 
     if (m_tradeState == TradeState::COMPLETE) {
-        App::PrintTTF(150, 340, "You brought me the right item! Good work.", 0.239f, 0.0f, 0.0f, 1);
-        App::PrintTTF(150, 305, "A deal is struck! I'll take that.", 1.0f, 1.0f, 1.0f, 0);
+        App::PrintTTF(150, 340, "let me look at this... Yes!!", 0.239f, 0.0f, 0.0f, 1);
+        App::PrintTTF(150, 305, "A deal is struck!", 1.0f, 1.0f, 1.0f, 0);
         return;
     }
 
     if (m_tradeState == TradeState::FAILED) {
-        App::PrintTTF(150, 340, "You brought me the wrong items, try again tomorrow.", 0.239f, 0.0f, 0.0f, 1);
+        App::PrintTTF(150, 340, "What is this.. it is not what I requested.", 0.239f, 0.0f, 0.0f, 1);
         App::PrintTTF(150, 305, "The goblin shakes his head in disappointment.", 1.0f, 1.0f, 1.0f, 0);
         return;
     }
 
     if (m_tradeState == TradeState::PROMPT) {
         App::PrintTTF(135, 325, "The goblin eyes your pockets...", 0.239f, 0.0f, 0.0f, 1);
-        App::PrintTTF(135, 305, "Care to make a deal, or head to sleep?", 1.0f, 1.0f, 1.0f, 0);
+        App::PrintTTF(135, 305, "Would you like to make a trade?", 1.0f, 1.0f, 1.0f, 0);
         
         App::PrintTTF(235, 275, "TRADE", 
             m_promptChoice == 0 ? 0.403f : 1.0f,
@@ -735,7 +669,7 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
         return;
     }
 
-    // cursor
+    
     if (m_tradeState == TradeState::SELECTING) {
         if (m_selectedItemIndex < (int)tradeable.size()) {
             m_ui_cursor->SetPosition(SLOT_X[m_selectedItemIndex], SLOT_Y[m_selectedItemIndex]);
@@ -749,8 +683,9 @@ void Rooftop::RenderTradeUI(const std::vector<Item>& playerInventory) {
     if (m_tradeState == TradeState::CONFIRMING) {
         App::PrintTTF(120, 320, "Give this to the goblin?", 1.0f, 1.0f, 1.0f, 1);
 
-        // show staged items
-        for (int si : m_stagedItems) {
+        std::vector<int> tradeable = GetTradeableIndices(playerInventory);
+        if (!tradeable.empty() && m_selectedItemIndex < (int)tradeable.size()) {
+            int si = tradeable[m_selectedItemIndex];
             DrawItemIcon(playerInventory[si].id, 160, 280.0f);
             App::PrintTTF(120, 210.0f, playerInventory[si].name.c_str(), 0.239f, 0.0f, 0.0f, 0);
         }
@@ -778,5 +713,23 @@ void Rooftop::RenderPlant() {
     if (GearManager::GetInstance().GetGearCount() >= 6) {
         m_campBouquet->SetColor(b, b, b);
         m_campBouquet->Draw();
+    }
+}
+
+void Rooftop::RenderOverlayText(bool nearHatch, bool isDay) {
+    if (m_tradeState != TradeState::NONE) return;
+
+    if (m_playerInTentZone) {
+        if (isDay) {
+            App::PrintTTF(750, 170, "The goblin is out...", 0.8f, 0.8f, 0.8f, 0);
+            if (m_showDayMessage)
+                App::PrintTTF(750, 145, "You can only trade at night.", 0.239f, 0.0f, 0.0f, 0);
+        } else {
+            App::PrintTTF(750, 170, "Press Enter to trade or sleep", 1.0f, 1.0f, 1.0f, 0);
+        }
+    }
+
+    if (!m_playerNearFire && !nearHatch) {
+        App::PrintTTF(10, 70, "Press I to check today's request", 1.0f, 1.0f, 1.0f, 0);
     }
 }

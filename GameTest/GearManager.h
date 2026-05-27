@@ -13,9 +13,9 @@ public:
     void AddGear();
     int GetGearCount() const { return m_gearCount; }
 
-    // render
+    
     void RenderUI(float x, float y);
-    // number of gears to finish
+    
     bool IsComplete() const { return m_gearCount >= 7; }
     void Reset();
 

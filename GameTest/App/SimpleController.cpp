@@ -1,44 +1,44 @@
-//-----------------------------------------------------------------------------
-// SimpleController.cpp
-// Simple controller support using XINPUT.
-//-----------------------------------------------------------------------------
+
+
+
+
 #include "stdafx.h"
-//-----------------------------------------------------------------------------
-#include <windows.h>  // for MS Windows
+
+#include <windows.h>  
 #include <stdio.h>
-//-----------------------------------------------------------------------------
+
 #include "SimpleController.h"
 #include "app.h"
 
-//-----------------------------------------------------------------------------
-#if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
+
+#if (_WIN32_WINNT >= 0x0602 )
 #include <XInput.h>
 #pragma comment(lib,"xinput.lib")
 #else
 #include <XInput.h>
 #pragma comment(lib,"xinput9_1_0.lib")
 #endif
-//-----------------------------------------------------------------------------
-#define UPDATE_DZONE		// Define if you want a dead zone on the thumb stick analog inputs.
-#define INPUT_DEADZONE  ( 0.10f * FLOAT(0x7FFF) )  // Default to 10% of the +/- 32767 range.   This is a reasonable default value but can be altered if needed.
-//-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Singleton
-//-----------------------------------------------------------------------------
+#define UPDATE_DZONE		
+#define INPUT_DEADZONE  ( 0.10f * FLOAT(0x7FFF) )  
+
+
+
+
+
 CSimpleControllers &CSimpleControllers::GetInstance()
 {
 	static CSimpleControllers theControllers;
 	return theControllers;
 }
-//-----------------------------------------------------------------------------
+
 void CSimpleControllers::Update()
 {
     DWORD dwResult;
 	int numControllers = 0;
     for( DWORD i = 0; i < MAX_CONTROLLERS; i++ )
     {
-        // Simply get the state of the controller from XInput.
+        
         dwResult = XInputGetState( i, &m_Controllers[i].m_state );
 
 		if (dwResult == ERROR_SUCCESS)
@@ -50,7 +50,7 @@ void CSimpleControllers::Update()
             m_Controllers[i].m_bConnected = false;
     }
 	
-	// No controllers so lets fake one using keyboard defines.
+	
 	if (numControllers == 0 )
 	{
 		m_Controllers[0].m_bConnected = true;
@@ -105,7 +105,7 @@ void CSimpleControllers::Update()
 			m_Controllers[i].m_debouncedButtons = ~m_Controllers[i].m_lastButtons &m_Controllers[i].m_state.Gamepad.wButtons;
 			m_Controllers[i].m_lastButtons = m_Controllers[i].m_state.Gamepad.wButtons;
 
-			// Zero value if thumbsticks are within the dead zone 
+			
 			if ((m_Controllers[i].m_state.Gamepad.sThumbLX < INPUT_DEADZONE &&
 				m_Controllers[i].m_state.Gamepad.sThumbLX > -INPUT_DEADZONE) &&
 				(m_Controllers[i].m_state.Gamepad.sThumbLY < INPUT_DEADZONE &&

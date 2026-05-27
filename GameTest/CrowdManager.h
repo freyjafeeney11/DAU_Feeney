@@ -1,4 +1,4 @@
-// CrowdManager.h
+
 #pragma once
 #include "app\app.h"
 #include <math.h>

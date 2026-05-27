@@ -1,4 +1,4 @@
-// Patroller.h
+
 #pragma once
 #include "app\app.h"
 
@@ -27,6 +27,8 @@ private:
     static constexpr float ms_CAUGHT_FREEZE_TIME = 2.0f;
 
     bool m_playerCaught;
+    int  m_charismaticLives;
+    bool m_justEscaped;
 
 public:
     Patroller();
@@ -37,7 +39,9 @@ public:
     void Render(float camX, float camY);
 
     bool IsPlayerCaught()   const { return m_playerCaught; }
-    void Reset() { m_playerCaught = false; m_state = PATROLLER_INACTIVE; m_sprite->SetPosition(-300.0f, 300.0f); }
+    bool JustHadEscape()          { bool v = m_justEscaped; m_justEscaped = false; return v; }
+    int  GetLivesRemaining() const { return m_charismaticLives; }
+    void Reset() { m_playerCaught = false; m_justEscaped = false; m_charismaticLives = 2; m_state = PATROLLER_INACTIVE; m_sprite->SetPosition(-300.0f, 300.0f); }
     bool IsInactive()       const { return m_state == PATROLLER_INACTIVE; }
     PatrollerState GetState() const { return m_state; }
 };

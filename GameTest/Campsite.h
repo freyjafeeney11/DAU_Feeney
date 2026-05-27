@@ -72,12 +72,9 @@ private:
     TradeState m_tradeState;
     int   m_promptChoice;
     int   m_confirmChoice;
-    int   m_selectedItemIndex;  // 0-5 = item slots, 6 = submit button
+    int   m_selectedItemIndex;
 
-    // staging
-    std::vector<int> m_stagedItems;   // inventory indices queued for trade
-
-    // request board
+    
     bool m_requestBoardOpen;
     bool m_iBoardKeyDown;
 
@@ -86,10 +83,10 @@ public:
 private:
     static const DailyRequest ms_requests[7];
 
-    static constexpr float COMPLETE_DISPLAY_TIME = 1.5f;
+    static constexpr float COMPLETE_DISPLAY_TIME = 3.5f;
     static constexpr float FIRE_SIT_DURATION     = 2.0f;
     static constexpr float FIRE_X                = 585.0f;
-    static constexpr float FIRE_TRIGGER_RADIUS   = 130.0f;
+    static constexpr float FIRE_TRIGGER_RADIUS   = 250.0f;
     static constexpr float HATCH_X = 200.0f;
     static constexpr float HATCH_Y = 250.0f;
     static constexpr float HATCH_RADIUS = 120.0f;
@@ -101,7 +98,6 @@ private:
 
     std::vector<int> GetTradeableIndices(const std::vector<Item>& playerInventory) const;
     void DrawItemIcon(int itemId, float x, float y);
-    bool StagedMatchesRequest() const;
     void RenderRequestBoard() const;
 
 public:
@@ -111,10 +107,12 @@ public:
     void Update(float deltaTime, float playerX, std::vector<Item>& playerInventory, bool isDay);
     void Render(bool isDay);
     void RenderTradeUI(const std::vector<Item>& playerInventory);
+    void RenderOverlayText(bool nearHatch, bool isDay);
     void RenderPlant();
 
-    void NotifyNewDay();   // call from GameTest after JustSlept() is true
-    void Reset();          // call on retry
+    void NotifyNewDay();
+    void Reset();
+    void CloseUI();
 
     bool IsPlayerNearHatch(float px) const;
     bool JustSlept();
@@ -123,6 +121,9 @@ public:
 
     bool IsSleeping()         const { return m_playerSleeping; }
     bool IsTrading()          const { return (m_tradeState != TradeState::NONE && m_tradeState != TradeState::SLEEP_TRANSITION); }
+    bool IsSittingByFire()    const { return m_tradeState == TradeState::FIRE_SIT; }
+    bool IsSleepTransition()  const { return m_tradeState == TradeState::SLEEP_TRANSITION; }
+    bool IsRequestBoardOpen() const { return m_requestBoardOpen; }
     float GetSpawnX()         const { return PLAYER_SPAWN_X; }
     float GetSpawnY()         const { return PLAYER_SPAWN_Y; }
     float GetFadeBrightness() const;

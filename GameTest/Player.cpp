@@ -1,7 +1,8 @@
-// Player.cpp
+
 #include "stdafx.h"
 #include "Player.h"
 #include "UserControls.h"
+#include "PlayerArchetype.h"
 
 Player::Player() {
     m_isHiding = false;
@@ -31,19 +32,23 @@ void Player::Update(float deltaTime) {
         bool sprinting = UserControls::IsUserSprinting();
         m_sprite->SetAnimation(sprinting ? ANIM_RUN : ANIM_WALK);
         m_sprite->SetFlipX(false);
-
+        bool dex = (PlayerArchetype::current == Archetype::DEXTEROUS);
+        float walk = dex ? ms_WALK_SPEED * 1.45f : ms_WALK_SPEED;
+        float run  = dex ? ms_RUN_SPEED  * 1.45f : ms_RUN_SPEED;
         float x, y;
         m_sprite->GetPosition(x, y);
-        m_sprite->SetPosition(x + (sprinting ? ms_RUN_SPEED : ms_WALK_SPEED), y);
+        m_sprite->SetPosition(x + (sprinting ? run : walk), y);
     }
     else if (UserControls::IsUserGoingLeft()) {
         bool sprinting = UserControls::IsUserSprinting();
         m_sprite->SetAnimation(sprinting ? ANIM_RUN : ANIM_WALK);
         m_sprite->SetFlipX(true);
-
+        bool dex = (PlayerArchetype::current == Archetype::DEXTEROUS);
+        float walk = dex ? ms_WALK_SPEED * 1.45f : ms_WALK_SPEED;
+        float run  = dex ? ms_RUN_SPEED  * 1.45f : ms_RUN_SPEED;
         float x, y;
         m_sprite->GetPosition(x, y);
-        m_sprite->SetPosition(x - (sprinting ? ms_RUN_SPEED : ms_WALK_SPEED), y);
+        m_sprite->SetPosition(x - (sprinting ? run : walk), y);
     }
     else if (UserControls::IsUserGoingDown()) {
         m_isHiding = true;

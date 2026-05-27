@@ -1,42 +1,46 @@
-//---------------------------------------------------------------------------------
-// Main.cpp
-//---------------------------------------------------------------------------------
+
+
+
 #include "stdafx.h"
-//---------------------------------------------------------------------------------
-#include <windows.h>  // for MS Windows
+
+#include <windows.h>  
 #include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <list>
-//---------------------------------------------------------------------------------
+
 #include "app.h"
 #include "SimpleSound.h"
 #include "SimpleController.h"
 
-//---------------------------------------------------------------------------------
-// Initial setup globals.
-//---------------------------------------------------------------------------------
+
+
+
 int WINDOW_WIDTH = APP_INIT_WINDOW_WIDTH;
 int WINDOW_HEIGHT = APP_INIT_WINDOW_HEIGHT;
+int VIEWPORT_WIDTH = APP_INIT_WINDOW_WIDTH;
+int VIEWPORT_HEIGHT = APP_INIT_WINDOW_HEIGHT;
+int VIEWPORT_X = 0;
+int VIEWPORT_Y = 0;
 HWND MAIN_WINDOW_HANDLE = nullptr;
 
-//---------------------------------------------------------------------------------
+
 static const double UPDATE_MAX = ((1.0 / APP_MAX_FRAME_RATE)*1000.0);
-//---------------------------------------------------------------------------------
-// Internal globals for timing.
+
+
 double gPCFreq = 0.0;
 __int64 gCounterStart = 0;
 double gLastTime;
 
-//---------------------------------------------------------------------------------
-// User implemented methods.
-//---------------------------------------------------------------------------------
+
+
+
 extern void Init();
 extern void Update(float deltaTime);
 extern void Render();
 extern void Shutdown();
-//---------------------------------------------------------------------------------
+
 void StartCounter()
 {
 	LARGE_INTEGER li;
@@ -89,25 +93,51 @@ CProfiler	gUserUpdateProfiler;
 CProfiler	gUpdateDeltaTime;
 bool		gRenderUpdateTimes = APP_RENDER_UPDATE_TIMES;
 
-/* Initialize OpenGL Graphics */
+
 void InitGL()
 {
 	StartCounter();
 	gLastTime = GetCounter();
-	// Set "clearing" or background color
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black and opaque
+	
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); 
 }
 
-//---------------------------------------------------------------------------------
-// Handler for window-repaint event. Call back when the window first appears and
-// whenever the window needs to be re-painted. */
-//---------------------------------------------------------------------------------
+void Reshape(int w, int h)
+{
+	WINDOW_WIDTH = w;
+	WINDOW_HEIGHT = h;
+
+	float targetAspect = 1024.0f / 720.0f;
+	float windowAspect = (float)w / (float)h;
+
+	VIEWPORT_WIDTH = w;
+	VIEWPORT_HEIGHT = h;
+	VIEWPORT_X = 0;
+	VIEWPORT_Y = 0;
+
+	if (windowAspect > targetAspect) {
+		
+		VIEWPORT_WIDTH = (int)(h * targetAspect);
+		VIEWPORT_X = (w - VIEWPORT_WIDTH) / 2;
+	} else {
+		
+		VIEWPORT_HEIGHT = (int)(w / targetAspect);
+		VIEWPORT_Y = (h - VIEWPORT_HEIGHT) / 2;
+	}
+
+	glViewport(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+}
+
+
+
+
+
 void Display()
 {
-	glClear(GL_COLOR_BUFFER_BIT);   // Clear the color buffer with current clearing color
+	glClear(GL_COLOR_BUFFER_BIT);   
 
 	gUserRenderProfiler.Start();	
-	Render();						// Call user defined render.
+	Render();						
 	gUserRenderProfiler.Stop();
 	if (gRenderUpdateTimes)
 	{
@@ -115,27 +145,27 @@ void Display()
 		gUserRenderProfiler.Print(10, 25, "User Render");
 		gUserUpdateProfiler.Print(10, 10, "User Update");
 	}
-	glFlush();  // Render now						 
+	glFlush();  
 }
 
-//---------------------------------------------------------------------------------
-// Update from glut. Called when no more event handling.
-//---------------------------------------------------------------------------------
+
+
+
 void Idle()
 {	
 	static double prevTime = GetCounter();
 	double tick = GetCounter() - prevTime;
 	double currentTime = GetCounter();
 	double deltaTime = currentTime - gLastTime;
-	// Update.
+	
 	if (deltaTime > (UPDATE_MAX))
 	{	
 		gUpdateDeltaTime.Stop();
-		glutPostRedisplay(); //everytime you are done 
+		glutPostRedisplay(); 
 		CSimpleControllers::GetInstance().Update();
 
 		gUserUpdateProfiler.Start();
-		Update((float)deltaTime);				// Call user defined update.
+		Update((float)deltaTime);				
 		gUserUpdateProfiler.Stop();
 		
 		gLastTime = currentTime;		
@@ -155,26 +185,34 @@ void Idle()
 		{		
 			exit(0);
 		}
+
+		static bool lastF11 = false;
+		bool f11 = App::IsKeyPressed(VK_F11);
+		if (f11 && !lastF11)
+		{
+			glutFullScreenToggle();
+		}
+		lastF11 = f11;
 		gUpdateDeltaTime.Start();
 	}
 	
 }
 
-// Break here and use the diagnostics debug view to check for user mem leaks.
+
 void CheckMemCallback()
 {
 }
 
 
-//---------------------------------------------------------------------------------
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, 	_In_opt_ HINSTANCE hPrevInstance,	_In_ LPWSTR    lpCmdLine, _In_ int       nCmdShow)
 {	
 	int argc = 0;	char* argv = "";
 
-	// Exit handler to check memory on exit.
+	
 	const int result_1 = std::atexit(CheckMemCallback);
 
-	// Setup glut.
+	
 	glutInit(&argc, &argv);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutInitWindowPosition(100, 100);
@@ -182,28 +220,31 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, 	_In_opt_ HINSTANCE hPrevInstanc
 	HDC dc = wglGetCurrentDC();
 	MAIN_WINDOW_HANDLE = WindowFromDC(dc);
 	glutIdleFunc(Idle);
-	glutDisplayFunc(Display);       // Register callback handler for window re-paint event	
+	glutDisplayFunc(Display);       
+	glutReshapeFunc(Reshape);
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
-	InitGL();                       // Our own OpenGL initialization
+	InitGL();                       
 
 
 
-	// Init sounds system.
+	
 	CSimpleSound::GetInstance().Initialize(MAIN_WINDOW_HANDLE);
 	
-	// Call user defined init.
+	
 	Init();
 
-	// Enter glut the event-processing loop				
+	glutFullScreen();
+
+	
 	glutMainLoop();
 	
-	// Call user shutdown.
+	
 	Shutdown();	
 
-	// Shutdown sound system.
+	
 	CSimpleSound::GetInstance().Shutdown();
 
-	// And we are done.
+	
 	return 0;
 }
 

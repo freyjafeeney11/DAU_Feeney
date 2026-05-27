@@ -1,15 +1,15 @@
-///////////////////////////////////////////////////////////////////////////////
-// Filename: SimpleSprite.cpp
-// Privides a very simple DSOUND wrapper to load and play wav files.
-///////////////////////////////////////////////////////////////////////////////
-//-----------------------------------------------------------------------------
+
+
+
+
+
 #include "stdafx.h"
-//-----------------------------------------------------------------------------
+
 #include <windows.h>
 #include <stdio.h>
 #include <assert.h>
 
-//-----------------------------------------------------------------------------
+
 
 #include "app.h"
 #include "AppSettings.h"
@@ -20,7 +20,7 @@
 
 std::map<const char *, CSimpleSprite::sTextureDef > CSimpleSprite::m_textures;
 
-//-----------------------------------------------------------------------------
+
 CSimpleSprite::CSimpleSprite(const char *fileName, unsigned int nColumns, unsigned int nRows)
 	: m_nColumns(nColumns)
 	, m_nRows(nRows)
@@ -70,7 +70,7 @@ void CSimpleSprite::CalculateUVs()
     float v0 = v * row;
     float v1 = v * (row + 1);
 
-    // flip horizontally by swapping U coords
+    
     if (m_flipX)
         std::swap(u0, u1);
 
@@ -152,7 +152,7 @@ bool CSimpleSprite::LoadTexture(const char * filename)
 		return true;
     }
     
-    //unsigned char *imageData = loadBMPRaw(filename, m_texWidth, m_texHeight, true);
+    
 
     int channels;
     unsigned char* imageData = stbi_load(filename, &m_texWidth, &m_texHeight, &channels, 4);

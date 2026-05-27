@@ -1,4 +1,4 @@
-// CrowdManager.cpp
+
 #include "stdafx.h"
 #include "CrowdManager.h"
 #include <stdlib.h>
@@ -41,7 +41,7 @@ CrowdManager::CrowdManager() : m_swayTime(0.0f) {
 
 void CrowdManager::Update(float deltaTime) {
 
-    m_swayTime += deltaTime / 1000.0f; // deltaTime is in milliseconds, convert to seconds
+    m_swayTime += deltaTime / 1000.0f;
 
     for (int i = 0; i < ms_NUM_CLUMPS; i++) {
         CrowdClump& clump = m_crowdClumps[i];

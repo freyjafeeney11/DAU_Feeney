@@ -61,14 +61,14 @@ Level::Level() {
 
     m_cityScrollOffset = 0.0f;
 
-    // alerted icons
+    
     m_questionIcon = App::CreateSprite(".\\TestData\\question_mark.png", 1, 1);
     m_questionIcon->SetScale(0.2f);
     m_alertIcon = App::CreateSprite(".\\TestData\\exclamation.png", 1, 1);
     m_alertIcon->SetScale(0.2f);
     m_npcAlerted = false;
 
-    // ticketman
+    
     m_currentCar = 1;
     m_guardState = GuardState::NONE;
     m_guardChoice = 0;
@@ -86,7 +86,8 @@ Level::~Level() {
     delete m_roamingNPC;
     delete m_roamingNPC2;
     delete m_guardSprite;
-    delete m_ladderSprite;
+    delete m_questionIcon;
+    delete m_alertIcon;
 }
 
 bool Level::IsPlayerInWalkingNPCVision(float playerX, float playerY) const {
@@ -136,19 +137,29 @@ void Level::RenderWalkingNPCVision(float camX, float camY, bool isColliding) con
         if (isColliding || m_npcAlerted) {
             glColor4f(1.0f, 0.0f, 0.0f, 0.25f);
             glVertex2f(sx, sy);
-            glColor4f(1.0f, 0.0f, 0.0f, 0.09f);
         }
         else {
             glColor4f(1.0f, 0.5f, 0.1f, 0.25f);
             glVertex2f(sx, sy);
-            glColor4f(1.0f, 0.5f, 0.1f, 0.09f);
         }
 
         for (int i = 0; i <= NUM_RAYS; i++) {
             float t = (float)i / NUM_RAYS;
-            float spread = (t - 0.5f) * 2.0f * coneWidth * VISION_RANGE;
-            float vx = nx - camX + forwardX * VISION_RANGE;
-            float vy = sy + spread - TILT_DOWN;
+            float angle = (t - 0.5f) * 2.0f * coneWidth;
+            if (!movingRight) angle = 3.14159f - angle;
+            
+            
+            float edgeFade = 1.0f - fabsf((t - 0.5f) * 2.0f);
+            float alpha = 0.09f * edgeFade;
+
+            if (isColliding || m_npcAlerted) {
+                glColor4f(1.0f, 0.0f, 0.0f, alpha);
+            } else {
+                glColor4f(1.0f, 0.5f, 0.1f, alpha);
+            }
+            
+            float vx = (nx - camX) + cosf(angle) * VISION_RANGE;
+            float vy = sy + sinf(angle) * VISION_RANGE - TILT_DOWN;
 #if APP_USE_VIRTUAL_RES
             APP_VIRTUAL_TO_NATIVE_COORDS(vx, vy);
 #endif
@@ -161,6 +172,7 @@ void Level::RenderWalkingNPCVision(float camX, float camY, bool isColliding) con
     if (m_npcActive2) drawCone(m_roamingNPC2, m_npcMoveRight2);
 
     glDisable(GL_BLEND);
+    glEnable(GL_TEXTURE_2D);
 }
 
 void Level::Update(float deltaTime) {
@@ -234,7 +246,7 @@ bool Level::IsPlayerNearGuard(float px) const {
 }
 
 void Level::UpdateGuard(float playerX, int& playerGold, bool& outChangeCar, float deltaTime) {
-    if (m_currentCar >= 3) return; // no guard in the final car
+    if (m_currentCar >= 3) return; 
 
     float dt = deltaTime / 1000.0f;
     bool enterDown = App::IsKeyPressed(VK_RETURN);
@@ -259,7 +271,7 @@ void Level::UpdateGuard(float playerX, int& playerGold, bool& outChangeCar, floa
     if (m_guardState == GuardState::NONE) {
         if (IsPlayerNearGuard(playerX) && enterDown && !m_enterWasDown) {
             int currentGear = GearManager::GetInstance().GetGearCount();
-            int requiredGear = (m_currentCar == 1) ? 3 : ((m_currentCar == 2) ? 6 : 9);
+            int requiredGear = 0; 
             if (currentGear < requiredGear) {
                 m_guardState = GuardState::NOT_READY;
                 m_msgTimer = 0.0f;
@@ -288,8 +300,8 @@ void Level::UpdateGuard(float playerX, int& playerGold, bool& outChangeCar, floa
 
             if (enterDown && !m_enterWasDown) {
                 if (m_guardChoice == 0) {
-                    if (playerGold >= 10) {
-                        playerGold -= 10;
+                    if (playerGold >= 30) {
+                        playerGold -= 30;
                         outChangeCar = true;
                         m_currentCar++;
                         m_guardState = GuardState::NONE;
@@ -319,15 +331,15 @@ void Level::RenderGuardUI() {
     }
 
     if (m_guardState == GuardState::NOT_READY) {
-        App::PrintTTF(169, 730, "Ticketmaster: The boss said nobody moves yet.", 1.0f, 1.0f, 1.0f, 0);
-        App::PrintTTF(169, 710, "Go bother the passengers, kid.", 1.0f, 0.7f, 0.7f, 0);
+        App::PrintTTF(169, 730, "Ticketman: Thou shall not pass.", 1.0f, 1.0f, 1.0f, 0);
+        App::PrintTTF(169, 710, "The goblin is not satisfied...", 1.0f, 0.7f, 0.7f, 0);
         return;
     }
 
-    // dialogue text pos
+    
     if (m_guardState == GuardState::PROMPT) {
-        App::PrintTTF(169, 730, "Ticketmaster: Ticket for the next car is 10 gold.", 1.0f, 1.0f, 1.0f, 0);
-        App::PrintTTF(169, 705, "Pay 10 Gold?", 0.239f, 0.0f, 0.0f, 1);
+        App::PrintTTF(169, 730, "Ticketman: Ticket for the next car is 30 gold.", 1.0f, 1.0f, 1.0f, 0);
+        App::PrintTTF(169, 705, "Pay 30 Gold?", 0.239f, 0.0f, 0.0f, 1);
 
         float yesR = (m_guardChoice == 0) ? 1.0f : 0.5f;
         float noR = (m_guardChoice == 1) ? 1.0f : 0.5f;
@@ -359,7 +371,7 @@ void Level::RenderBackground(float camX, float brightness) {
     m_rain->SetPosition(475.0f - windowScrollX + windowWidth, 450.0f);
     m_rain->Draw();
 
-    m_background->SetColor(1.0f, 1.0f, 1.0f); // <-- Changed from (b, b, b)
+    m_background->SetColor(1.0f, 1.0f, 1.0f);
     m_background->SetPosition(500.0f - bgScrollX, 400.0f);
     m_background->Draw();
     m_background->SetPosition(500.0f - bgScrollX + bgWidth, 400.0f);

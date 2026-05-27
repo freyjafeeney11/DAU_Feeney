@@ -12,7 +12,7 @@ Outro::Outro() {
 
     for (int i = 0; i < SLIDE_COUNT; i++) {
         m_slides[i]->SetPosition(512.0f, 400.0f);
-        m_slides[i]->SetScale(0.4f);
+        m_slides[i]->SetScale(0.6f);
     }
 
     m_dialogueBox = App::CreateSprite(".\\TestData\\dialogue.png", 1, 1);
@@ -20,7 +20,9 @@ Outro::Outro() {
     m_dialogueBox->SetScale(0.6f);
 
     m_currentSlide = 0;
-    m_slideTimer = 0.0f;
+    m_slideTimer   = 0.0f;
+    m_enterWasDown = true;
+    m_done         = false;
 
     StartSlide(0);
 }
@@ -34,10 +36,10 @@ Outro::~Outro() {
 
 void Outro::StartSlide(int index) {
     if (index < SLIDE_COUNT) {
-        m_fullText = m_lines[index];
+        m_fullText      = m_lines[index];
         m_displayedText = "";
-        m_typeTimer = 0.0f;
-        m_typeIndex = 0;
+        m_typeTimer     = 0.0f;
+        m_typeIndex     = 0;
     }
 }
 
@@ -54,19 +56,29 @@ void Outro::Update(float deltaTime) {
         }
     }
 
-    if (m_slideTimer >= SLIDE_DURATION && m_currentSlide < SLIDE_COUNT - 1) {
-        m_slideTimer = 0.0f;
-        m_currentSlide++;
-        StartSlide(m_currentSlide);
+    bool enterNow = App::IsKeyPressed(VK_RETURN);
+
+    if (enterNow && !m_enterWasDown) {
+        bool typingDone = (m_typeIndex >= (int)m_fullText.size());
+
+        if (!typingDone) {
+            m_displayedText = m_fullText;
+            m_typeIndex     = (int)m_fullText.size();
+        } else {
+            if (m_currentSlide < SLIDE_COUNT - 1) {
+                m_currentSlide++;
+                StartSlide(m_currentSlide);
+            } else {
+                m_done = true;
+            }
+        }
     }
 
-    if (IsDone()) {
-        m_endTimer += dt;
-    }
+    m_enterWasDown = enterNow;
 }
 
 bool Outro::ShouldReturnToMenu() const {
-    return IsDone() && m_endTimer >= END_DELAY;
+    return m_done;
 }
 
 void Outro::Render() {
@@ -77,9 +89,13 @@ void Outro::Render() {
         m_dialogueBox->Draw();
         App::Print(169, 710, m_displayedText.c_str(), 1.0f, 1.0f, 1.0f);
     }
+
+    bool typingDone = (m_typeIndex >= (int)m_fullText.size());
+    if (typingDone) {
+        App::Print(169, 690, "Press Enter", 0.6f, 0.6f, 0.6f);
+    }
 }
 
 bool Outro::IsDone() const {
-    return m_currentSlide >= SLIDE_COUNT - 1
-        && m_slideTimer >= SLIDE_DURATION;
+    return m_done;
 }

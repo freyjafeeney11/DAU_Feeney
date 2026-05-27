@@ -1,16 +1,16 @@
-//-----------------------------------------------------------------------------
-// SimpleSound.h
-// Privides a very simple DSOUND wrapper to load and play wav files.
-//-----------------------------------------------------------------------------
+
+
+
+
 #ifndef _SIMPLESOUND_H_
 #define _SIMPLESOUND_H_
 
 #include <dsound.h>
 #include <map>
 
-//-----------------------------------------------------------------------------
-// CSimpleSound
-//-----------------------------------------------------------------------------
+
+
+
 class CSimpleSound
 {
 private:
@@ -42,7 +42,7 @@ public:
 	bool PlaySound(const char *filename, DWORD flags = 0);
 	bool StopSound(const char *filename);
 	bool IsPlaying(const char *filename);	
-	bool SetVolume(const char* filename, float volume); // 0.0 = silent, 1.0 = max
+	bool SetVolume(const char* filename, float volume); 
 
 private:
 	bool InitializeDirectSound(HWND);
